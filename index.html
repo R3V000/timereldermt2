@@ -248,6 +248,12 @@
       Stan zapisuje sie lokalnie (per przegladarka).
     </div>
   </div>
+
+  <div class="kv">
+    <button id="exportBtn" class="btn">Eksport ustawien</button>
+    <button id="importBtn" class="btn">Import ustawien</button>
+  </div>
+
 </aside>
 
 <main>
@@ -636,6 +642,34 @@ function toast(msg){
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 2200);
 }
+
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+
+exportBtn.addEventListener("click", () => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) {
+    alert("Brak danych do eksportu");
+    return;
+  }
+  navigator.clipboard.writeText(data);
+  toast("Ustawienia skopiowane do schowka");
+});
+
+importBtn.addEventListener("click", () => {
+  const input = prompt("Wklej dane eksportu:");
+  if (!input) return;
+
+  try {
+    JSON.parse(input); // walidacja
+    localStorage.setItem(STORAGE_KEY, input);
+    toast("Ustawienia zaimportowane");
+    location.reload();
+  } catch (e) {
+    alert("Nieprawidlowy format danych");
+  }
+});
+
 
 /** Boot */
 init();
