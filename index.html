@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boss Timery</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --text:#e8eefc;
+      --muted:#a9b6d6;
+      --accent:#4aa3ff;
+      --danger:#ff5a6a;
+      --ok:#49d27d;
+      --warn:#ffd166;
+      --border:rgba(255,255,255,.10);
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    body{ margin:0; background:radial-gradient(1200px 700px at 25% 10%, rgba(74,163,255,.18), transparent 60%), var(--bg); color:var(--text); }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(11,15,25,.75);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav{
+      display:flex; gap:10px; align-items:center;
+      padding:14px 16px;
+      max-width:1100px; margin:0 auto;
+    }
+    .brand{ font-weight:800; letter-spacing:.4px; margin-right:6px; color:var(--text); }
+    .pill{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform .08s ease, border-color .2s ease, background .2s ease;
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .pill:hover{ transform:translateY(-1px); border-color:rgba(74,163,255,.5); }
+    .pill.active{ border-color:rgba(74,163,255,.85); box-shadow:0 0 0 3px rgba(74,163,255,.12); }
+
+    main{ max-width:1100px; margin:18px auto 40px; padding:0 16px; }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:16px 16px 10px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    .title{ font-size:18px; font-weight:800; margin:0; }
+    .sub{ margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.3; }
+    .badge{
+      font-size:12px; color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:999px; padding:6px 10px;
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .content{ padding:14px 16px 16px; }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .08s ease, border-color .2s ease;
+      font-size:14px;
+    }
+    .btn:hover{ transform:translateY(-1px); border-color:rgba(74,163,255,.5); }
+    .btn.primary{ background:rgba(74,163,255,.16); border-color:rgba(74,163,255,.5); }
+    .btn.danger{ background:rgba(255,90,106,.14); border-color:rgba(255,90,106,.45); }
+
+    /* Channels layout: 4 columns on desktop => CH1-4 / CH5-7 */
+    .channels{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+    @media (max-width: 900px){ .channels{ grid-template-columns:repeat(2, 1fr); } }
+    @media (max-width: 520px){ .channels{ grid-template-columns:1fr; } }
+
+    .chan{
+      background:rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+    .chanTop{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .chanName{ font-weight:950; letter-spacing:.3px; }
+    .state{
+      font-size:12px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .state.idle{ color:var(--muted); }
+    .state.running{ color:var(--accent); border-color:rgba(74,163,255,.35); background:rgba(74,163,255,.08); }
+    .state.window{ color:var(--warn); border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10); }
+    .state.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); background:rgba(73,210,125,.08); }
+
+    /* Main countdown to min */
+    .timer{
+      font-variant-numeric: tabular-nums;
+      font-size:24px; font-weight:950; letter-spacing:.5px;
+      margin:6px 0 6px;
+    }
+
+    .meta{
+      font-size:12px; color:var(--muted);
+      display:flex; flex-direction:column; gap:3px;
+      margin-bottom:10px;
+    }
+
+    /* Big respawn window line */
+    .windowBig{
+      font-variant-numeric: tabular-nums;
+      font-size:18px;
+      font-weight:950;
+      color:var(--text);
+      margin-top:2px;
+    }
+    .windowBig span{
+      color:var(--warn);
+    }
+
+    .sep{ height:1px; background:var(--border); margin:10px 0; }
+    .small{ font-size:12px; color:var(--muted); line-height:1.35; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    input[type="number"]{
+      width:90px; padding:8px 10px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(0,0,0,.18); color:var(--text);
+    }
+    label{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(18,26,43,.95);
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:10px 14px;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      color:var(--text);
+      font-size:13px;
+      display:none;
+      z-index:50;
+    }
+
+    /* Drawer (hidden settings) */
+    .fabSettings{
+      position:fixed;
+      right:14px;
+      top:86px;
+      z-index:60;
+      border:1px solid var(--border);
+      background:rgba(18,26,43,.92);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      user-select:none;
+    }
+    .drawerOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.45);
+      backdrop-filter: blur(2px);
+      z-index:70;
+      display:none;
+    }
+    .drawer{
+      position:fixed;
+      top:0; right:0;
+      height:100vh;
+      width:340px;
+      max-width:86vw;
+      background:rgba(18,26,43,.98);
+      border-left:1px solid var(--border);
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      z-index:80;
+      transform:translateX(100%);
+      transition:transform .18s ease;
+      display:flex;
+      flex-direction:column;
+    }
+    .drawer.open{ transform:translateX(0); }
+    .drawerOverlay.open{ display:block; }
+    .drawerHead{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .drawerTitle{ font-weight:950; }
+    .drawerBody{ padding:12px 14px 16px; overflow:auto; }
+    .kv{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .kv:last-child{ border-bottom:none; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="brand">Boss Timery</div>
+    <div id="bossTabs" class="row" style="gap:8px;"></div>
+  </div>
+</header>
+
+<button id="openSettings" class="fabSettings" title="Ustawienia">Ustawienia</button>
+
+<div id="drawerOverlay" class="drawerOverlay"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawerHead">
+    <div class="drawerTitle">Ustawienia</div>
+    <button id="closeSettings" class="btn">Zamknij</button>
+  </div>
+  <div class="drawerBody">
+    <div class="kv">
+      <span>Alarm</span>
+      <label><input id="alarmToggle" type="checkbox" checked /> wlaczony</label>
+    </div>
+    <div class="kv">
+      <span>Glosnosc</span>
+      <input id="volume" type="number" min="0" max="100" step="5" value="60" />
+    </div>
+    <div class="kv">
+      <span>Test dzwieku</span>
+      <button id="testSoundBtn" class="btn primary">Odtworz</button>
+    </div>
+    <div class="kv">
+      <span>Teraz</span>
+      <b id="now" class="mono">-</b>
+    </div>
+    <div class="sep"></div>
+    <div class="small">
+      Edycja bossow i widelek: sekcja <span class="mono">BOSSES</span> w JS.<br/>
+      Stan zapisuje sie lokalnie (per przegladarka).
+    </div>
+  </div>
+</aside>
+
+<main>
+  <section class="card">
+    <div class="cardHead">
+      <div>
+        <h1 id="bossTitle" class="title">-</h1>
+        <p class="sub">Timer pokazuje: odliczanie do poczatku okna (min) + powiekszone okno respa (HH:MM-HH:MM).</p>
+      </div>
+      <div id="respawnBadge" class="badge">Resp: -</div>
+    </div>
+
+    <div class="content">
+      <div class="row" style="justify-content:space-between;">
+        <div class="small">
+          Kliknij Start po zbiciu bossa na danym kanale (albo ustaw czas recznie).
+        </div>
+        <div class="row">
+          <button id="resetBossBtn" class="btn danger">Reset bossa</button>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="channels" id="channels"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/** EDIT HERE */
+const BOSSES = [
+  { id: "dziewiec_ogonow1", name: "Dziewiec Ogonow srodek", respawnMin: 20, respawnMax: 35 },
+  { id: "dziewiec_ogonow2", name: "Dziewiec Ogonow gora", respawnMin: 20, respawnMax: 35 },
+  { id: "dziewiec_ogonow3", name: "Dziewiec Ogonow lewo", respawnMin: 20, respawnMax: 35 },
+  { id: "dziewiec_ogonow4", name: "Dziewiec Ogonow prawo", respawnMin: 20, respawnMax: 35 },
+  { id: "ognisty_krol1",    name: "Ognisty Krol srodek",    respawnMin: 60, respawnMax: 83 },
+  { id: "ognisty_krol2",   name: "Ognisty Krol prawo",   respawnMin: 60, respawnMax: 83 }
+];
+
+const CHANNELS = [1,2,3,4,5,6,7];
+const STORAGE_KEY = "boss_timers_v3_timeonly";
+
+let state = loadState();
+let activeBossId = BOSSES[0].id;
+
+const bossTabsEl = document.getElementById("bossTabs");
+const bossTitleEl = document.getElementById("bossTitle");
+const respawnBadgeEl = document.getElementById("respawnBadge");
+const channelsEl = document.getElementById("channels");
+const resetBossBtn = document.getElementById("resetBossBtn");
+
+const alarmToggleEl = document.getElementById("alarmToggle");
+const volumeEl = document.getElementById("volume");
+const testSoundBtn = document.getElementById("testSoundBtn");
+const nowEl = document.getElementById("now");
+
+const toastEl = document.getElementById("toast");
+
+/** Drawer */
+const openSettingsBtn = document.getElementById("openSettings");
+const closeSettingsBtn = document.getElementById("closeSettings");
+const drawer = document.getElementById("drawer");
+const overlay = document.getElementById("drawerOverlay");
+
+function openDrawer(){
+  drawer.classList.add("open");
+  overlay.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+}
+function closeDrawer(){
+  drawer.classList.remove("open");
+  overlay.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+}
+openSettingsBtn.addEventListener("click", openDrawer);
+closeSettingsBtn.addEventListener("click", closeDrawer);
+overlay.addEventListener("click", closeDrawer);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+/** Audio */
+let audioCtx = null;
+function beep(times = 3){
+  if (!alarmToggleEl.checked) return;
+  const vol = clamp(parseInt(volumeEl.value || "60", 10) / 100, 0, 1);
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const t0 = audioCtx.currentTime;
+  for (let i=0; i<times; i++){
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+
+    g.gain.setValueAtTime(0.0001, t0 + i*0.22);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + i*0.22 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + i*0.22 + 0.18);
+
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0 + i*0.22);
+    o.stop(t0 + i*0.22 + 0.19);
+  }
+}
+
+/** Init */
+function init(){
+  renderBossTabs();
+  setActiveBoss(activeBossId);
+
+  resetBossBtn.addEventListener("click", () => {
+    const b = getBoss(activeBossId);
+    if (!state[activeBossId]) state[activeBossId] = {};
+    for (const ch of CHANNELS) state[activeBossId][ch] = null;
+    saveState();
+    toast(`Reset: ${b.name}`);
+    renderChannels();
+  });
+
+  testSoundBtn.addEventListener("click", () => beep(3));
+  setInterval(() => { nowEl.textContent = formatTime(Date.now()); }, 250);
+  setInterval(tick, 250);
+  tick();
+}
+
+function renderBossTabs(){
+  bossTabsEl.innerHTML = "";
+  for (const b of BOSSES){
+    const btn = document.createElement("button");
+    btn.className = "pill";
+    btn.textContent = b.name;
+    btn.addEventListener("click", () => setActiveBoss(b.id));
+    btn.dataset.bossId = b.id;
+    bossTabsEl.appendChild(btn);
+  }
+}
+
+function setActiveBoss(bossId){
+  activeBossId = bossId;
+  const b = getBoss(bossId);
+
+  [...bossTabsEl.querySelectorAll(".pill")].forEach(el => {
+    el.classList.toggle("active", el.dataset.bossId === bossId);
+  });
+
+  bossTitleEl.textContent = b.name;
+
+  const min = b.respawnMin;
+  const max = b.respawnMax;
+  respawnBadgeEl.textContent = (min === max) ? `Resp: ${min} min` : `Resp: ${min}-${max} min`;
+
+  renderChannels();
+}
+
+function renderChannels(){
+  channelsEl.innerHTML = "";
+  const b = getBoss(activeBossId);
+
+  if (!state[activeBossId]) state[activeBossId] = {};
+  for (const ch of CHANNELS){
+    if (typeof state[activeBossId][ch] === "undefined") state[activeBossId][ch] = null;
+  }
+  saveState();
+
+  for (const ch of CHANNELS){
+    const box = document.createElement("div");
+    box.className = "chan";
+
+    const top = document.createElement("div");
+    top.className = "chanTop";
+
+    const name = document.createElement("div");
+    name.className = "chanName";
+    name.textContent = `CH${ch}`;
+
+    const st = document.createElement("div");
+    st.className = "state idle";
+    st.textContent = "brak startu";
+
+    top.appendChild(name);
+    top.appendChild(st);
+
+    const timer = document.createElement("div");
+    timer.className = "timer mono";
+    timer.textContent = "--:--";
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const lastKillLine = document.createElement("div");
+    lastKillLine.textContent = "Kill: -";
+
+    const windowBig = document.createElement("div");
+    windowBig.className = "windowBig mono";
+    windowBig.innerHTML = `Okno: <span>--:-- - --:--</span>`;
+
+    const endWindowLine = document.createElement("div");
+    endWindowLine.textContent = "";
+
+    meta.appendChild(lastKillLine);
+    meta.appendChild(windowBig);
+    meta.appendChild(endWindowLine);
+
+    const controls = document.createElement("div");
+    controls.className = "row";
+
+    const startBtn = document.createElement("button");
+    startBtn.className = "btn primary";
+    startBtn.textContent = "Start";
+    startBtn.title = "Ustaw kill time na teraz";
+    startBtn.addEventListener("click", () => {
+      state[activeBossId][ch] = Date.now();
+      saveState();
+      toast(`${b.name} CH${ch}: start`);
+      renderChannels();
+    });
+
+    const setBtn = document.createElement("button");
+    setBtn.className = "btn";
+    setBtn.textContent = "Ustaw czas...";
+    setBtn.title = "Wpisz czas kill'a (YYYY-MM-DD HH:MM)";
+    setBtn.addEventListener("click", () => {
+      const current = state[activeBossId][ch];
+      const def = current ? formatDateTime(current) : "";
+      const input = prompt("Podaj czas kill'a: YYYY-MM-DD HH:MM (np. 2026-01-21 17:05)", def);
+      if (!input) return;
+
+      const ms = parseUserDateTime(input.trim());
+      if (!ms){
+        toast("Zly format daty/czasu.");
+        return;
+      }
+      state[activeBossId][ch] = ms;
+      saveState();
+      toast(`${b.name} CH${ch}: ustawiono`);
+      renderChannels();
+    });
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "btn danger";
+    clearBtn.textContent = "Wyczysc";
+    clearBtn.addEventListener("click", () => {
+      state[activeBossId][ch] = null;
+      saveState();
+      toast(`${b.name} CH${ch}: wyczyszczono`);
+      renderChannels();
+    });
+
+    controls.appendChild(startBtn);
+    controls.appendChild(setBtn);
+    controls.appendChild(clearBtn);
+
+    box.appendChild(top);
+    box.appendChild(timer);
+    box.appendChild(meta);
+    box.appendChild(controls);
+
+    box.dataset.channel = String(ch);
+    channelsEl.appendChild(box);
+  }
+
+  tick();
+}
+
+function tick(){
+  const b = getBoss(activeBossId);
+  const now = Date.now();
+
+  const cards = [...channelsEl.querySelectorAll(".chan")];
+  for (const card of cards){
+    const ch = parseInt(card.dataset.channel, 10);
+    const lastKill = state[activeBossId]?.[ch] ?? null;
+
+    const stateEl = card.querySelector(".state");
+    const timerEl = card.querySelector(".timer");
+
+    const metaLines = card.querySelectorAll(".meta > div");
+    const lastKillLine = metaLines[0];
+    const windowBig = metaLines[1];
+    const endWindowLine = metaLines[2];
+
+    if (!lastKill){
+      stateEl.className = "state idle";
+      stateEl.textContent = "brak startu";
+      timerEl.textContent = "--:--";
+      lastKillLine.textContent = "Kill: -";
+      windowBig.innerHTML = `Okno: <span>--:-- - --:--</span>`;
+      endWindowLine.textContent = "";
+      continue;
+    }
+
+    const minAt = lastKill + b.respawnMin * 60 * 1000;
+    const maxAt = lastKill + b.respawnMax * 60 * 1000;
+
+    lastKillLine.textContent = `Kill: ${formatTime(lastKill)}`;
+    windowBig.innerHTML = `Okno: <span>${formatTime(minAt)} - ${formatTime(maxAt)}</span>`;
+
+    const toMin = minAt - now;
+    const toMax = maxAt - now;
+
+    if (toMin > 0){
+      stateEl.className = "state running";
+      stateEl.textContent = "ODLICZA";
+      timerEl.textContent = formatMMSS(toMin);
+      endWindowLine.textContent = `Do konca okna: ${formatMMSS(toMax)}`;
+      sessionStorage.removeItem(firedKeyMin(activeBossId, ch));
+    } else if (toMax > 0){
+      stateEl.className = "state window";
+      stateEl.textContent = "OKNO RESPA";
+      timerEl.textContent = "00:00";
+      endWindowLine.textContent = `Do konca okna: ${formatMMSS(toMax)}`;
+
+      const key = firedKeyMin(activeBossId, ch);
+      if (!sessionStorage.getItem(key)){
+        sessionStorage.setItem(key, "1");
+        toast(`${b.name} CH${ch}: start okna respa!`);
+        beep(4);
+      }
+    } else {
+      stateEl.className = "state ready";
+      stateEl.textContent = "PO OKNIE";
+      timerEl.textContent = "00:00";
+      endWindowLine.textContent = "Okno minelo (boss na pewno byl).";
+      sessionStorage.setItem(firedKeyMin(activeBossId, ch), "1");
+    }
+  }
+}
+
+function firedKeyMin(bossId, ch){ return `fired_min_${bossId}_${ch}`; }
+
+/** Storage */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === "object") ? parsed : {};
+  }catch(e){ return {}; }
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/** Utils */
+function getBoss(id){ return BOSSES.find(b => b.id === id) || BOSSES[0]; }
+
+function formatMMSS(ms){
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+/* Time only: HH:MM */
+function formatTime(ms){
+  const d = new Date(ms);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/* still used for prompt default */
+function formatDateTime(ms){
+  const d = new Date(ms);
+  const Y = d.getFullYear();
+  const M = pad2(d.getMonth()+1);
+  const D = pad2(d.getDate());
+  const h = pad2(d.getHours());
+  const m = pad2(d.getMinutes());
+  return `${Y}-${M}-${D} ${h}:${m}`;
+}
+
+function parseUserDateTime(str){
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/);
+  if (!m) return null;
+  const Y = +m[1], Mo = +m[2], D = +m[3], h = +m[4], mi = +m[5];
+  if (Mo<1||Mo>12||D<1||D>31||h>23||mi>59) return null;
+  const dt = new Date(Y, Mo-1, D, h, mi, 0, 0);
+  return isNaN(dt.getTime()) ? null : dt.getTime();
+}
+
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = "block";
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 2200);
+}
+
+/** Boot */
+init();
+</script>
+</body>
+</html>
