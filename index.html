@@ -18,7 +18,13 @@
       --radius:16px;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
     }
-    body{ margin:0; background:radial-gradient(1200px 700px at 25% 10%, rgba(74,163,255,.18), transparent 60%), var(--bg); color:var(--text); }
+
+    body{
+      margin:0;
+      background:radial-gradient(1200px 700px at 25% 10%, rgba(74,163,255,.18), transparent 60%), var(--bg);
+      color:var(--text);
+    }
+
     header{
       position:sticky; top:0; z-index:10;
       background:rgba(11,15,25,.75);
@@ -28,9 +34,10 @@
     .nav{
       display:flex; gap:10px; align-items:center;
       padding:14px 16px;
-      max-width:1100px; margin:0 auto;
+      max-width:1200px; margin:0 auto;
     }
     .brand{ font-weight:800; letter-spacing:.4px; margin-right:6px; color:var(--text); }
+
     .pill{
       border:1px solid var(--border);
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -46,7 +53,21 @@
     .pill:hover{ transform:translateY(-1px); border-color:rgba(74,163,255,.5); }
     .pill.active{ border-color:rgba(74,163,255,.85); box-shadow:0 0 0 3px rgba(74,163,255,.12); }
 
-    main{ max-width:1100px; margin:18px auto 40px; padding:0 16px; }
+    /* Layout: left panel + main */
+    main{
+      max-width:1200px;
+      margin:18px auto 40px;
+      padding:0 16px;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 300px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .layout{ grid-template-columns: 1fr; }
+    }
 
     .card{
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -55,6 +76,7 @@
       box-shadow:var(--shadow);
       overflow:hidden;
     }
+
     .cardHead{
       padding:16px 16px 10px;
       border-bottom:1px solid var(--border);
@@ -69,9 +91,11 @@
       background:rgba(255,255,255,.03);
       white-space:nowrap;
     }
+
     .content{ padding:14px 16px 16px; }
 
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
     .btn{
       border:1px solid var(--border);
       background:rgba(255,255,255,.05);
@@ -86,7 +110,7 @@
     .btn.primary{ background:rgba(74,163,255,.16); border-color:rgba(74,163,255,.5); }
     .btn.danger{ background:rgba(255,90,106,.14); border-color:rgba(255,90,106,.45); }
 
-    /* Channels layout: 4 columns on desktop => CH1-4 / CH5-7 */
+    /* Channels layout */
     .channels{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
     @media (max-width: 900px){ .channels{ grid-template-columns:repeat(2, 1fr); } }
     @media (max-width: 520px){ .channels{ grid-template-columns:1fr; } }
@@ -96,7 +120,15 @@
       border:1px solid var(--border);
       border-radius:14px;
       padding:12px;
+      scroll-margin-top: 92px;
+      position:relative;
+      transition: box-shadow .15s ease, border-color .15s ease;
     }
+    .chan.flash{
+      border-color:rgba(74,163,255,.85);
+      box-shadow:0 0 0 4px rgba(74,163,255,.12), var(--shadow);
+    }
+
     .chanTop{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .chanName{ font-weight:950; letter-spacing:.3px; }
     .state{
@@ -111,20 +143,16 @@
     .state.window{ color:var(--warn); border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10); }
     .state.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); background:rgba(73,210,125,.08); }
 
-    /* Main countdown to min */
     .timer{
       font-variant-numeric: tabular-nums;
       font-size:24px; font-weight:950; letter-spacing:.5px;
       margin:6px 0 6px;
     }
-
     .meta{
       font-size:12px; color:var(--muted);
       display:flex; flex-direction:column; gap:3px;
       margin-bottom:10px;
     }
-
-    /* Big respawn window line */
     .windowBig{
       font-variant-numeric: tabular-nums;
       font-size:18px;
@@ -132,9 +160,7 @@
       color:var(--text);
       margin-top:2px;
     }
-    .windowBig span{
-      color:var(--warn);
-    }
+    .windowBig span{ color:var(--warn); }
 
     .sep{ height:1px; background:var(--border); margin:10px 0; }
     .small{ font-size:12px; color:var(--muted); line-height:1.35; }
@@ -152,7 +178,7 @@
       border:1px solid var(--border);
       border-radius:999px;
       padding:10px 14px;
-      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      box-shadow:var(--shadow);
       color:var(--text);
       font-size:13px;
       display:none;
@@ -171,7 +197,7 @@
       padding:10px 12px;
       border-radius:999px;
       cursor:pointer;
-      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      box-shadow:var(--shadow);
       user-select:none;
     }
     .drawerOverlay{
@@ -189,7 +215,7 @@
       max-width:86vw;
       background:rgba(18,26,43,.98);
       border-left:1px solid var(--border);
-      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      box-shadow:var(--shadow);
       z-index:80;
       transform:translateX(100%);
       transition:transform .18s ease;
@@ -207,6 +233,72 @@
     .drawerBody{ padding:12px 14px 16px; overflow:auto; }
     .kv{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
     .kv:last-child{ border-bottom:none; }
+
+    /* Left panel: active windows */
+    .leftHeadActions{ display:flex; gap:8px; align-items:center; }
+    .chip{
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:12px 12px 14px;
+    }
+    .item{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.14);
+      border-radius:14px;
+      padding:10px 10px;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .2s ease;
+    }
+    .item:hover{ transform:translateY(-1px); border-color:rgba(255,209,102,.45); }
+    .itemMain{ display:flex; flex-direction:column; gap:3px; }
+    .itemTop{
+      display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;
+    }
+    .itemBoss{ font-weight:950; }
+    .itemCh{ color:var(--muted); font-size:12px; border:1px solid var(--border); border-radius:999px; padding:3px 8px; background:rgba(255,255,255,.03); }
+    .itemWindow{
+      font-variant-numeric: tabular-nums;
+      font-size:13px;
+      font-weight:900;
+      color:var(--warn);
+    }
+    .itemSub{ color:var(--muted); font-size:12px; }
+    .tickWrap{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+    }
+    .tickWrap label{
+      display:flex; align-items:center; gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tick{
+      width:18px; height:18px;
+      accent-color: var(--ok);
+      cursor:pointer;
+    }
+    .empty{
+      padding:14px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
   </style>
 </head>
 <body>
@@ -238,49 +330,74 @@
       <span>Test dzwieku</span>
       <button id="testSoundBtn" class="btn primary">Odtworz</button>
     </div>
+
+    <!-- Export/Import -->
+    <div class="kv">
+      <span>Ustawienia</span>
+      <div class="row" style="gap:8px;">
+        <button id="exportBtn" class="btn">Eksport</button>
+        <button id="importBtn" class="btn">Import</button>
+      </div>
+    </div>
+
     <div class="kv">
       <span>Teraz</span>
       <b id="now" class="mono">-</b>
     </div>
     <div class="sep"></div>
     <div class="small">
-      Edycja bossow i widelek: sekcja <span class="mono">BOSSES</span> w JS.<br/>
-      Stan zapisuje sie lokalnie (per przegladarka).
+      Eksport kopiuje stan do schowka (i pokazuje tekst). Import: wklej tekst i potwierdz.
     </div>
   </div>
-
-  <div class="kv">
-    <button id="exportBtn" class="btn">Eksport ustawien</button>
-    <button id="importBtn" class="btn">Import ustawien</button>
-  </div>
-
 </aside>
 
 <main>
-  <section class="card">
-    <div class="cardHead">
-      <div>
-        <h1 id="bossTitle" class="title">-</h1>
-        <p class="sub">Timer pokazuje: odliczanie do poczatku okna (min) + powiekszone okno respa (HH:MM-HH:MM).</p>
-      </div>
-      <div id="respawnBadge" class="badge">Resp: -</div>
-    </div>
-
-    <div class="content">
-      <div class="row" style="justify-content:space-between;">
-        <div class="small">
-          Kliknij Start po zbiciu bossa na danym kanale (albo ustaw czas recznie).
+  <div class="layout">
+    <!-- LEFT: active windows -->
+    <aside class="card">
+      <div class="cardHead">
+        <div>
+          <div class="title" style="font-size:16px;">W okienku teraz</div>
+          <div class="sub" style="margin-top:6px;">Lista tylko tych, ktore sa aktualnie w oknie respa.</div>
         </div>
-        <div class="row">
-          <button id="resetBossBtn" class="btn danger">Reset bossa</button>
+        <div class="leftHeadActions">
+          <div id="activeCount" class="chip">0</div>
         </div>
       </div>
+      <div class="content" style="padding:0;">
+        <div id="activeList" class="list"></div>
+        <div id="activeEmpty" class="empty" style="display:none;">
+          Aktualnie nic nie jest w okienku.
+        </div>
+      </div>
+    </aside>
 
-      <div class="sep"></div>
+    <!-- MAIN -->
+    <section class="card">
+      <div class="cardHead">
+        <div>
+          <h1 id="bossTitle" class="title">-</h1>
+          <p class="sub">Odliczanie do poczatku okna + duze okno respa (HH:MM - HH:MM).</p>
+        </div>
+        <div id="respawnBadge" class="badge">Resp: -</div>
+      </div>
 
-      <div class="channels" id="channels"></div>
-    </div>
-  </section>
+      <div class="content">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small">
+            Start = kill teraz. Ptaszek w lewym panelu tez robi kill teraz (reset).
+          </div>
+          <div class="row">
+            <button id="resetBossBtn" class="btn danger">Reset bossa</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="channels" id="channels"></div>
+      </div>
+    </section>
+  </div>
 </main>
 
 <div id="toast" class="toast"></div>
@@ -297,7 +414,7 @@ const BOSSES = [
 ];
 
 const CHANNELS = [1,2,3,4,5,6,7];
-const STORAGE_KEY = "boss_timers_v3_timeonly";
+const STORAGE_KEY = "boss_timers_v5_export_import";
 
 let state = loadState();
 let activeBossId = BOSSES[0].id;
@@ -312,6 +429,13 @@ const alarmToggleEl = document.getElementById("alarmToggle");
 const volumeEl = document.getElementById("volume");
 const testSoundBtn = document.getElementById("testSoundBtn");
 const nowEl = document.getElementById("now");
+
+const activeListEl = document.getElementById("activeList");
+const activeEmptyEl = document.getElementById("activeEmpty");
+const activeCountEl = document.getElementById("activeCount");
+
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
 
 const toastEl = document.getElementById("toast");
 
@@ -335,6 +459,53 @@ openSettingsBtn.addEventListener("click", openDrawer);
 closeSettingsBtn.addEventListener("click", closeDrawer);
 overlay.addEventListener("click", closeDrawer);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+/** Export/Import */
+exportBtn.addEventListener("click", async () => {
+  ensureBossState();
+  const payload = {
+    v: 1,
+    storageKey: STORAGE_KEY,
+    exportedAt: Date.now(),
+    state,
+    activeBossId
+  };
+  const text = JSON.stringify(payload);
+
+  // try clipboard, fallback to prompt
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Eksport: skopiowane do schowka");
+  }catch(e){
+    // ignore, show prompt
+  }
+  prompt("Skopiuj tekst eksportu:", text);
+});
+
+importBtn.addEventListener("click", () => {
+  const input = prompt("Wklej tekst eksportu:");
+  if (!input) return;
+
+  try{
+    const payload = JSON.parse(input);
+
+    // basic validation
+    if (!payload || typeof payload !== "object") throw new Error("bad payload");
+    if (!payload.state || typeof payload.state !== "object") throw new Error("no state");
+
+    // (optional) also restore active boss if exists
+    state = payload.state;
+    if (payload.activeBossId && typeof payload.activeBossId === "string"){
+      activeBossId = payload.activeBossId;
+    }
+
+    saveState();
+    toast("Import: zapisano, odswiezam...");
+    setTimeout(() => location.reload(), 350);
+  }catch(e){
+    alert("Nieprawidlowy format importu.");
+  }
+});
 
 /** Audio */
 let audioCtx = null;
@@ -372,12 +543,20 @@ function init(){
     saveState();
     toast(`Reset: ${b.name}`);
     renderChannels();
+    renderActiveWindows();
   });
 
   testSoundBtn.addEventListener("click", () => beep(3));
+
   setInterval(() => { nowEl.textContent = formatTime(Date.now()); }, 250);
-  setInterval(tick, 250);
+
+  setInterval(() => {
+    tick();
+    renderActiveWindows();
+  }, 250);
+
   tick();
+  renderActiveWindows();
 }
 
 function renderBossTabs(){
@@ -407,21 +586,28 @@ function setActiveBoss(bossId){
   respawnBadgeEl.textContent = (min === max) ? `Resp: ${min} min` : `Resp: ${min}-${max} min`;
 
   renderChannels();
+  tick();
+}
+
+function ensureBossState(){
+  for (const b of BOSSES){
+    if (!state[b.id]) state[b.id] = {};
+    for (const ch of CHANNELS){
+      if (typeof state[b.id][ch] === "undefined") state[b.id][ch] = null;
+    }
+  }
+  saveState();
 }
 
 function renderChannels(){
+  ensureBossState();
   channelsEl.innerHTML = "";
   const b = getBoss(activeBossId);
-
-  if (!state[activeBossId]) state[activeBossId] = {};
-  for (const ch of CHANNELS){
-    if (typeof state[activeBossId][ch] === "undefined") state[activeBossId][ch] = null;
-  }
-  saveState();
 
   for (const ch of CHANNELS){
     const box = document.createElement("div");
     box.className = "chan";
+    box.id = `chan_${activeBossId}_${ch}`;
 
     const top = document.createElement("div");
     top.className = "chanTop";
@@ -470,6 +656,7 @@ function renderChannels(){
       saveState();
       toast(`${b.name} CH${ch}: start`);
       renderChannels();
+      renderActiveWindows();
     });
 
     const setBtn = document.createElement("button");
@@ -491,6 +678,7 @@ function renderChannels(){
       saveState();
       toast(`${b.name} CH${ch}: ustawiono`);
       renderChannels();
+      renderActiveWindows();
     });
 
     const clearBtn = document.createElement("button");
@@ -501,6 +689,7 @@ function renderChannels(){
       saveState();
       toast(`${b.name} CH${ch}: wyczyszczono`);
       renderChannels();
+      renderActiveWindows();
     });
 
     controls.appendChild(startBtn);
@@ -515,11 +704,10 @@ function renderChannels(){
     box.dataset.channel = String(ch);
     channelsEl.appendChild(box);
   }
-
-  tick();
 }
 
 function tick(){
+  ensureBossState();
   const b = getBoss(activeBossId);
   const now = Date.now();
 
@@ -583,6 +771,119 @@ function tick(){
   }
 }
 
+function renderActiveWindows(){
+  ensureBossState();
+  const now = Date.now();
+
+  const active = [];
+  for (const boss of BOSSES){
+    for (const ch of CHANNELS){
+      const lastKill = state[boss.id]?.[ch] ?? null;
+      if (!lastKill) continue;
+
+      const minAt = lastKill + boss.respawnMin * 60 * 1000;
+      const maxAt = lastKill + boss.respawnMax * 60 * 1000;
+
+      if (now >= minAt && now < maxAt){
+        active.push({
+          bossId: boss.id,
+          bossName: boss.name,
+          ch,
+          minAt,
+          maxAt,
+          toMax: maxAt - now
+        });
+      }
+    }
+  }
+
+  active.sort((a,b) => a.toMax - b.toMax);
+
+  activeCountEl.textContent = String(active.length);
+
+  activeListEl.innerHTML = "";
+  if (active.length === 0){
+    activeEmptyEl.style.display = "block";
+    return;
+  }
+  activeEmptyEl.style.display = "none";
+
+  for (const it of active){
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const main = document.createElement("div");
+    main.className = "itemMain";
+
+    const top = document.createElement("div");
+    top.className = "itemTop";
+
+    const boss = document.createElement("div");
+    boss.className = "itemBoss";
+    boss.textContent = it.bossName;
+
+    const ch = document.createElement("div");
+    ch.className = "itemCh";
+    ch.textContent = `CH${it.ch}`;
+
+    top.appendChild(boss);
+    top.appendChild(ch);
+
+    const win = document.createElement("div");
+    win.className = "itemWindow mono";
+    win.textContent = `${formatTime(it.minAt)} - ${formatTime(it.maxAt)}`;
+
+    const sub = document.createElement("div");
+    sub.className = "itemSub";
+    sub.textContent = `Do konca okna: ${formatMMSS(it.toMax)}`;
+
+    main.appendChild(top);
+    main.appendChild(win);
+    main.appendChild(sub);
+
+    const right = document.createElement("div");
+    right.className = "tickWrap";
+
+    const lbl = document.createElement("label");
+    lbl.title = "Zaznacz = kill teraz (resetuje timer)";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "tick";
+    cb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state[it.bossId][it.ch] = Date.now();
+      saveState();
+      toast(`${it.bossName} CH${it.ch}: reset (kill teraz)`);
+      if (activeBossId === it.bossId){
+        renderChannels();
+      }
+      renderActiveWindows();
+      cb.checked = false;
+    });
+
+    lbl.appendChild(cb);
+    right.appendChild(lbl);
+
+    row.appendChild(main);
+    row.appendChild(right);
+
+    row.addEventListener("click", () => {
+      setActiveBoss(it.bossId);
+      setTimeout(() => {
+        const el = document.getElementById(`chan_${it.bossId}_${it.ch}`);
+        if (el){
+          el.scrollIntoView({ behavior:"smooth", block:"center" });
+          el.classList.add("flash");
+          setTimeout(() => el.classList.remove("flash"), 700);
+        }
+      }, 50);
+    });
+
+    activeListEl.appendChild(row);
+  }
+}
+
 function firedKeyMin(bossId, ch){ return `fired_min_${bossId}_${ch}`; }
 
 /** Storage */
@@ -606,14 +907,10 @@ function formatMMSS(ms){
   return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
 }
 function pad2(n){ return String(n).padStart(2,"0"); }
-
-/* Time only: HH:MM */
 function formatTime(ms){
   const d = new Date(ms);
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
-
-/* still used for prompt default */
 function formatDateTime(ms){
   const d = new Date(ms);
   const Y = d.getFullYear();
@@ -623,7 +920,6 @@ function formatDateTime(ms){
   const m = pad2(d.getMinutes());
   return `${Y}-${M}-${D} ${h}:${m}`;
 }
-
 function parseUserDateTime(str){
   const m = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/);
   if (!m) return null;
@@ -632,7 +928,6 @@ function parseUserDateTime(str){
   const dt = new Date(Y, Mo-1, D, h, mi, 0, 0);
   return isNaN(dt.getTime()) ? null : dt.getTime();
 }
-
 function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
 
 let toastTimer = null;
@@ -642,34 +937,6 @@ function toast(msg){
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 2200);
 }
-
-const exportBtn = document.getElementById("exportBtn");
-const importBtn = document.getElementById("importBtn");
-
-exportBtn.addEventListener("click", () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) {
-    alert("Brak danych do eksportu");
-    return;
-  }
-  navigator.clipboard.writeText(data);
-  toast("Ustawienia skopiowane do schowka");
-});
-
-importBtn.addEventListener("click", () => {
-  const input = prompt("Wklej dane eksportu:");
-  if (!input) return;
-
-  try {
-    JSON.parse(input); // walidacja
-    localStorage.setItem(STORAGE_KEY, input);
-    toast("Ustawienia zaimportowane");
-    location.reload();
-  } catch (e) {
-    alert("Nieprawidlowy format danych");
-  }
-});
-
 
 /** Boot */
 init();
