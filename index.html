@@ -676,6 +676,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* =========================
    EDIT HERE: bosses + spawn categories + theme
@@ -719,6 +720,13 @@ const BOSSES = [
 
 const CHANNELS = [1,2,3,4,5,6,7];
 const STORAGE_KEY = "boss_timers_monitor_columns_v1";
+
+// === Supabase shared state (no auth, per your request) ===
+const SUPABASE_URL = "https://trxccoshecjurifmeakh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyeGNjb3NoZWNqdXJpZm1lYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzk2ODAsImV4cCI6MjA4NDc1NTY4MH0.J0rIc_pK4PjyqNIZ8iDsmUR3pNPHlka30mI4Asrv8u4";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPA_TABLE = "boss_timers";
+
 
 /*
 state structure:
@@ -865,30 +873,62 @@ function ensureStateShape(){
   saveState();
 }
 
-function setKillNow(bossId, spawnId, ch){
+async function setKillNow(bossId, spawnId, ch){
   ensureStateShape();
-  state[bossId][spawnId][ch] = Date.now();
-  saveState();
+  const ms = Date.now();
+  state[bossId][spawnId][ch] = ms;
+  saveState(); // local cache
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms });
+
+  if (error) console.error("Supabase upsert error:", error);
 }
-function setKillMs(bossId, spawnId, ch, ms){
+async function setKillMs(bossId, spawnId, ch, ms){
   ensureStateShape();
   state[bossId][spawnId][ch] = ms;
-  saveState();
+  saveState(); // local cache
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms });
+
+  if (error) console.error("Supabase setKillMs error:", error);
 }
-function clearKill(bossId, spawnId, ch){
+async function clearKill(bossId, spawnId, ch){
   ensureStateShape();
   state[bossId][spawnId][ch] = null;
-  saveState();
+  saveState(); // local cache
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: null });
+
+  if (error) console.error("Supabase clearKill error:", error);
 }
-function resetBoss(bossId){
+async function resetBoss(bossId){
   ensureStateShape();
   const boss = getBoss(bossId);
+
+  // local cache
   for (const sp of boss.spawns){
     for (const ch of CHANNELS){
       state[bossId][sp.id][ch] = null;
     }
   }
   saveState();
+
+  // remote shared state
+  const rows = [];
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      rows.push({ boss_id: bossId, spawn_id: sp.id, channel: ch, kill_ms: null });
+    }
+  }
+
+  const { error } = await sb.from(SUPA_TABLE).upsert(rows);
+  if (error) console.error("Supabase resetBoss error:", error);
 }
 
 /* View switch */
@@ -1464,12 +1504,68 @@ function tickMonitorColumns(){
   }
 }
 
+/* Supabase: load + realtime */
+async function loadStateFromSupabase(){
+  ensureStateShape();
+
+  const { data, error } = await sb
+    .from(SUPA_TABLE)
+    .select("boss_id, spawn_id, channel, kill_ms");
+
+  if (error){
+    console.error("Supabase load error:", error);
+    return;
+  }
+
+  // reset local cache to empty, then fill from Supabase
+  state = {};
+  ensureStateShape();
+
+  for (const row of data){
+    if (!row) continue;
+    if (row.kill_ms === null || typeof row.kill_ms === "undefined") continue;
+    if (!state[row.boss_id] || !state[row.boss_id][row.spawn_id]) continue;
+    state[row.boss_id][row.spawn_id][row.channel] = row.kill_ms;
+  }
+
+  saveState();
+}
+
+function applySupabaseRow(row){
+  if (!row) return;
+  ensureStateShape();
+  if (!state[row.boss_id] || !state[row.boss_id][row.spawn_id]) return;
+  state[row.boss_id][row.spawn_id][row.channel] = row.kill_ms;
+  saveState();
+}
+
+function subscribeRealtime(){
+  sb.channel("boss_timers_realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: SUPA_TABLE },
+      (payload) => {
+        if (payload && payload.new){
+          applySupabaseRow(payload.new);
+        }
+        // refresh visible UI
+        if (activeView === "monitor"){
+          tickMonitorColumns();
+        } else {
+          tickConfig();
+          renderActiveWindows();
+        }
+      }
+    )
+    .subscribe();
+}
+
 /* Buttons */
 viewConfigBtn.addEventListener("click", () => setView("config"));
 viewMonitorBtn.addEventListener("click", () => setView("monitor"));
 
-resetBossBtn.addEventListener("click", () => {
-  resetBoss(activeBossId);
+resetBossBtn.addEventListener("click", async () => {
+  await resetBoss(activeBossId);
   toast(`Reset: ${getBoss(activeBossId).name}`);
   renderRespGroups();
   renderActiveWindows();
@@ -1478,20 +1574,22 @@ resetBossBtn.addEventListener("click", () => {
   }
 });
 
-monitorResetBossBtn.addEventListener("click", () => {
-  resetBoss(activeBossId);
+monitorResetBossBtn.addEventListener("click", async () => {
+  await resetBoss(activeBossId);
   toast(`Reset: ${getBoss(activeBossId).name}`);
   renderMonitorColumns();
   renderActiveWindows();
 });
 
-monitorKillAllBtn.addEventListener("click", () => {
+monitorKillAllBtn.addEventListener("click", async () => {
   const boss = getBoss(activeBossId);
+  const jobs = [];
   for (const sp of boss.spawns){
     for (const ch of CHANNELS){
-      setKillNow(activeBossId, sp.id, ch);
+      jobs.push(setKillNow(activeBossId, sp.id, ch));
     }
   }
+  await Promise.all(jobs);
   toast(`${boss.name}: kill all now (all spawns + CH1-CH7)`);
   tickMonitorColumns();
   renderActiveWindows();
@@ -1512,9 +1610,14 @@ setInterval(() => {
 }, 250);
 
 /* Boot */
-function init(){
+async function init(){
   ensureStateShape();
   renderBossTabs();
+
+  // shared state first
+  await loadStateFromSupabase();
+  subscribeRealtime();
+
   setActiveBoss(activeBossId);
   setView(activeView);
 }
