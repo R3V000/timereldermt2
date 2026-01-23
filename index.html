@@ -538,7 +538,34 @@
       border-color: color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.15));
       background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.05));
     }
-  </style>
+  
+/* ===== Timer visual alerts ===== */
+@keyframes pulseSoon {
+  0% { background: rgba(160,160,160,.08); }
+  50% { background: rgba(160,160,160,.22); }
+  100% { background: rgba(160,160,160,.08); }
+}
+@keyframes pulseWindow {
+  0% { background: rgba(73,210,125,.10); }
+  50% { background: rgba(73,210,125,.28); }
+  100% { background: rgba(73,210,125,.10); }
+}
+
+.chRow.soon {
+  animation: pulseSoon 1.4s ease-in-out infinite;
+  border-color: rgba(160,160,160,.35);
+}
+
+.chRow.window {
+  animation: pulseWindow 1.6s ease-in-out infinite;
+  border-color: rgba(73,210,125,.55);
+}
+
+.chRow.window .chTimer {
+  color: var(--ok);
+}
+
+</style>
 </head>
 
 <body>
@@ -687,7 +714,7 @@ const BOSSES = [
     name: "Dziewiec Ogonow",
     theme: { accent: "#4aa3ff", accent2: "rgba(74,163,255,.18)" },
     respawnMin: 30,
-    respawnMax: 30,
+    respawnMax: 60,
     spawns: [
       { id: "srodek", name: "Srodek" },
       { id: "gora",   name: "Gora" },
@@ -1460,6 +1487,19 @@ function tickMonitorColumns(){
 
     const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
     const status = computeStatus(boss, lastKill);
+    // visual alerts
+    row.classList.remove("soon","window");
+
+    // 2-minute warning before min resp
+    if (status.kind === "running" && status.toMin <= 2*60*1000){
+      row.classList.add("soon");
+    }
+
+    // window active
+    if (status.kind === "window"){
+      row.classList.add("window");
+    }
+
 
     const timerEl = row.querySelector(".chTimer");
     const windowEl = row.querySelector(".chWindow");
@@ -1544,20 +1584,25 @@ function subscribeRealtime(){
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: SUPA_TABLE },
-      (payload) => {
-        if (payload && payload.new){
-          applySupabaseRow(payload.new);
-        }
+      async (_payload) => {
+        // safest: re-fetch whole state so everyone stays identical
+        await loadStateFromSupabase();
+
         // refresh visible UI
         if (activeView === "monitor"){
+          renderMonitorColumns();
           tickMonitorColumns();
         } else {
+          renderRespGroups();
           tickConfig();
           renderActiveWindows();
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      // Helpful for debugging: "SUBSCRIBED" should appear in console
+      console.log("[realtime]", status);
+    });
 }
 
 /* Buttons */
@@ -1617,6 +1662,18 @@ async function init(){
   // shared state first
   await loadStateFromSupabase();
   subscribeRealtime();
+
+  // fallback: if Realtime is not enabled on the table, polling still keeps clients in sync
+  setInterval(async () => {
+    await loadStateFromSupabase();
+    if (activeView === "monitor"){
+      renderMonitorColumns();
+      tickMonitorColumns();
+    } else {
+      tickConfig();
+      renderActiveWindows();
+    }
+  }, 10000);
 
   setActiveBoss(activeBossId);
   setView(activeView);
