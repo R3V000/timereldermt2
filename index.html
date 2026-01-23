@@ -4,24 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Boss Timery</title>
+
   <style>
     :root{
       --bg:#0b0f19;
+      --panel:#121a2b;
       --text:#e8eefc;
       --muted:#a9b6d6;
+
+      /* Theme changes per boss */
       --accent:#4aa3ff;
+      --accent2: rgba(74,163,255,.18);
+
       --danger:#ff5a6a;
       --ok:#49d27d;
       --warn:#ffd166;
+
       --border:rgba(255,255,255,.10);
       --shadow:0 12px 30px rgba(0,0,0,.35);
       --radius:16px;
+
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
     }
 
     body{
       margin:0;
-      background:radial-gradient(1200px 700px at 25% 10%, rgba(74,163,255,.18), transparent 60%), var(--bg);
+      background:
+        radial-gradient(1200px 700px at 25% 10%, var(--accent2), transparent 60%),
+        var(--bg);
       color:var(--text);
     }
 
@@ -34,9 +44,25 @@
     .nav{
       display:flex; gap:10px; align-items:center;
       padding:14px 16px;
-      max-width:1200px; margin:0 auto;
+      max-width:1280px; margin:0 auto;
+      flex-wrap:wrap;
     }
-    .brand{ font-weight:800; letter-spacing:.4px; margin-right:6px; color:var(--text); }
+    .brand{
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-right:6px;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      white-space:nowrap;
+    }
+    .brandDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+      display:inline-block;
+    }
 
     .pill{
       border:1px solid var(--border);
@@ -46,22 +72,26 @@
       border-radius:999px;
       cursor:pointer;
       user-select:none;
-      transition:transform .08s ease, border-color .2s ease, background .2s ease;
+      transition:transform .08s ease, border-color .2s ease, box-shadow .2s ease;
       font-size:14px;
       white-space:nowrap;
     }
-    .pill:hover{ transform:translateY(-1px); border-color:rgba(74,163,255,.5); }
-    .pill.active{ border-color:rgba(74,163,255,.85); box-shadow:0 0 0 3px rgba(74,163,255,.12); }
+    .pill:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,.18); }
+    .pill.active{
+      border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.20));
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
 
-    /* Layout: left panel + main */
+    .spacer{ flex:1; min-width:12px; }
+
     main{
-      max-width:1200px;
+      max-width:1280px;
       margin:18px auto 40px;
       padding:0 16px;
     }
     .layout{
       display:grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 320px 1fr;
       gap:14px;
       align-items:start;
     }
@@ -82,7 +112,7 @@
       border-bottom:1px solid var(--border);
       display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     }
-    .title{ font-size:18px; font-weight:800; margin:0; }
+    .title{ font-size:18px; font-weight:900; margin:0; }
     .sub{ margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.3; }
     .badge{
       font-size:12px; color:var(--muted);
@@ -93,7 +123,6 @@
     }
 
     .content{ padding:14px 16px 16px; }
-
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
     .btn{
@@ -105,12 +134,39 @@
       cursor:pointer;
       transition:transform .08s ease, border-color .2s ease;
       font-size:14px;
+      white-space:nowrap;
     }
-    .btn:hover{ transform:translateY(-1px); border-color:rgba(74,163,255,.5); }
-    .btn.primary{ background:rgba(74,163,255,.16); border-color:rgba(74,163,255,.5); }
-    .btn.danger{ background:rgba(255,90,106,.14); border-color:rgba(255,90,106,.45); }
+    .btn:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,.18); }
+    .btn.primary{
+      background: color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.05));
+      border-color: color-mix(in srgb, var(--accent) 45%, rgba(255,255,255,.10));
+    }
+    .btn.danger{
+      background:rgba(255,90,106,.14);
+      border-color:rgba(255,90,106,.45);
+    }
 
-    /* Channels layout */
+    .seg{
+      display:flex;
+      border:1px solid var(--border);
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.03);
+    }
+    .seg button{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      padding:8px 12px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .seg button.active{
+      color:var(--text);
+      background: color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.03));
+    }
+
+    /* CONFIG: per-respawn channel grid */
     .channels{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
     @media (max-width: 900px){ .channels{ grid-template-columns:repeat(2, 1fr); } }
     @media (max-width: 520px){ .channels{ grid-template-columns:1fr; } }
@@ -121,12 +177,11 @@
       border-radius:14px;
       padding:12px;
       scroll-margin-top: 92px;
-      position:relative;
       transition: box-shadow .15s ease, border-color .15s ease;
     }
     .chan.flash{
-      border-color:rgba(74,163,255,.85);
-      box-shadow:0 0 0 4px rgba(74,163,255,.12), var(--shadow);
+      border-color: color-mix(in srgb, var(--accent) 80%, rgba(255,255,255,.10));
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent), var(--shadow);
     }
 
     .chanTop{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
@@ -139,7 +194,11 @@
       white-space:nowrap;
     }
     .state.idle{ color:var(--muted); }
-    .state.running{ color:var(--accent); border-color:rgba(74,163,255,.35); background:rgba(74,163,255,.08); }
+    .state.running{
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 35%, rgba(255,255,255,.10));
+      background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.03));
+    }
     .state.window{ color:var(--warn); border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10); }
     .state.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); background:rgba(73,210,125,.08); }
 
@@ -166,11 +225,11 @@
     .small{ font-size:12px; color:var(--muted); line-height:1.35; }
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
 
+    label{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
     input[type="number"]{
       width:90px; padding:8px 10px; border-radius:12px;
       border:1px solid var(--border); background:rgba(0,0,0,.18); color:var(--text);
     }
-    label{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
 
     .toast{
       position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
@@ -211,7 +270,7 @@
       position:fixed;
       top:0; right:0;
       height:100vh;
-      width:340px;
+      width:360px;
       max-width:86vw;
       background:rgba(18,26,43,.98);
       border-left:1px solid var(--border);
@@ -263,13 +322,24 @@
       cursor:pointer;
       transition: transform .08s ease, border-color .2s ease;
     }
-    .item:hover{ transform:translateY(-1px); border-color:rgba(255,209,102,.45); }
+    .item:hover{
+      transform:translateY(-1px);
+      border-color: rgba(255,209,102,.45);
+    }
     .itemMain{ display:flex; flex-direction:column; gap:3px; }
     .itemTop{
       display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;
     }
     .itemBoss{ font-weight:950; }
-    .itemCh{ color:var(--muted); font-size:12px; border:1px solid var(--border); border-radius:999px; padding:3px 8px; background:rgba(255,255,255,.03); }
+    .itemResp,
+    .itemCh{
+      color:var(--muted);
+      font-size:12px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:3px 8px;
+      background:rgba(255,255,255,.03);
+    }
     .itemWindow{
       font-variant-numeric: tabular-nums;
       font-size:13px;
@@ -277,17 +347,6 @@
       color:var(--warn);
     }
     .itemSub{ color:var(--muted); font-size:12px; }
-    .tickWrap{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:8px;
-    }
-    .tickWrap label{
-      display:flex; align-items:center; gap:8px;
-      cursor:pointer;
-      user-select:none;
-    }
     .tick{
       width:18px; height:18px;
       accent-color: var(--ok);
@@ -299,66 +358,256 @@
       font-size:13px;
       line-height:1.35;
     }
+
+    /* Respawn group (config) */
+    .respGroup{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      background: rgba(0,0,0,.10);
+    }
+    .respHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+    .respName{
+      font-weight:950;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .respDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+    .respMeta{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:6px 10px;
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .respBody{
+      padding:12px 12px 14px;
+    }
+
+    /* MONITOR (columns per spawn, rows per channel) */
+    .monitorTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .monitorColumns{
+      display:grid;
+      gap:12px;
+      align-items:stretch;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .spawnCol{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(0,0,0,.14);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .spawnColHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+
+    .spawnColName{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:950;
+      letter-spacing:.2px;
+    }
+    .spawnColDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+
+    .spawnColBody{
+      padding:10px 10px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .chRow{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      border-radius:14px;
+      padding:10px 10px;
+      display:grid;
+      grid-template-columns: 52px 1fr auto;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+    }
+
+    .chName{
+      font-weight:900;
+      color:var(--muted);
+      text-transform:lowercase;
+    }
+
+    .chMain{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+
+    .chTimer{
+      font-variant-numeric: tabular-nums;
+      font-size:20px;
+      font-weight:950;
+      letter-spacing:.4px;
+      line-height:1;
+    }
+
+    .chWindow{
+      font-variant-numeric: tabular-nums;
+      font-size:12px;
+      font-weight:900;
+      color:var(--warn);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .chBadge{
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 8px;
+      background:rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .chBadge.running{ color:var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, rgba(255,255,255,.10)); }
+    .chBadge.window{ color:var(--warn); border-color:rgba(255,209,102,.35); }
+    .chBadge.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); }
+    .chBadge.idle{ color:var(--muted); }
+
+    .chActions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .cfgBtn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.3px;
+      cursor:pointer;
+      user-select:none;
+      min-width:56px;
+      text-align:center;
+    }
+    .cfgBtn:hover{
+      border-color: color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.15));
+      background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.05));
+    }
   </style>
 </head>
+
 <body>
 <header>
   <div class="nav">
-    <div class="brand">Boss Timery</div>
+    <div class="brand"><span class="brandDot"></span>Boss Timery</div>
+
     <div id="bossTabs" class="row" style="gap:8px;"></div>
+
+    <div class="spacer"></div>
+
+    <div class="seg" role="tablist" aria-label="View mode">
+      <button id="viewConfigBtn" class="active" type="button">Config</button>
+      <button id="viewMonitorBtn" type="button">Monitor</button>
+    </div>
   </div>
 </header>
 
-<button id="openSettings" class="fabSettings" title="Ustawienia">Ustawienia</button>
+<button id="openSettings" class="fabSettings" title="Settings">Settings</button>
 
 <div id="drawerOverlay" class="drawerOverlay"></div>
 <aside id="drawer" class="drawer" aria-hidden="true">
   <div class="drawerHead">
-    <div class="drawerTitle">Ustawienia</div>
-    <button id="closeSettings" class="btn">Zamknij</button>
+    <div class="drawerTitle">Settings</div>
+    <button id="closeSettings" class="btn">Close</button>
   </div>
   <div class="drawerBody">
     <div class="kv">
       <span>Alarm</span>
-      <label><input id="alarmToggle" type="checkbox" checked /> wlaczony</label>
+      <label><input id="alarmToggle" type="checkbox" checked /> on</label>
     </div>
     <div class="kv">
-      <span>Glosnosc</span>
+      <span>Volume</span>
       <input id="volume" type="number" min="0" max="100" step="5" value="60" />
     </div>
     <div class="kv">
-      <span>Test dzwieku</span>
-      <button id="testSoundBtn" class="btn primary">Odtworz</button>
+      <span>Test sound</span>
+      <button id="testSoundBtn" class="btn primary">Play</button>
     </div>
 
-    <!-- Export/Import -->
     <div class="kv">
-      <span>Ustawienia</span>
+      <span>State</span>
       <div class="row" style="gap:8px;">
-        <button id="exportBtn" class="btn">Eksport</button>
+        <button id="exportBtn" class="btn">Export</button>
         <button id="importBtn" class="btn">Import</button>
       </div>
     </div>
 
     <div class="kv">
-      <span>Teraz</span>
-      <b id="now" class="mono">-</b>
+      <span>Now</span>
+      <b id="now" class="mono">--:--</b>
     </div>
+
     <div class="sep"></div>
     <div class="small">
-      Eksport kopiuje stan do schowka (i pokazuje tekst). Import: wklej tekst i potwierdz.
+      Local state per browser. Export/Import = handover.
     </div>
   </div>
 </aside>
 
 <main>
-  <div class="layout">
+  <!-- CONFIG VIEW -->
+  <div id="configView" class="layout">
     <!-- LEFT: active windows -->
     <aside class="card">
       <div class="cardHead">
         <div>
-          <div class="title" style="font-size:16px;">W okienku teraz</div>
-          <div class="sub" style="margin-top:6px;">Lista tylko tych, ktore sa aktualnie w oknie respa.</div>
+          <div class="title" style="font-size:16px;">In window now</div>
+          <div class="sub" style="margin-top:6px;">All spawns that are currently inside the respawn window.</div>
         </div>
         <div class="leftHeadActions">
           <div id="activeCount" class="chip">0</div>
@@ -367,7 +616,7 @@
       <div class="content" style="padding:0;">
         <div id="activeList" class="list"></div>
         <div id="activeEmpty" class="empty" style="display:none;">
-          Aktualnie nic nie jest w okienku.
+          Nothing is in window right now.
         </div>
       </div>
     </aside>
@@ -377,24 +626,49 @@
       <div class="cardHead">
         <div>
           <h1 id="bossTitle" class="title">-</h1>
-          <p class="sub">Odliczanie do poczatku okna + duze okno respa (HH:MM - HH:MM).</p>
+          <p id="bossSub" class="sub">Select boss. Configure kill times per spawn and channel.</p>
         </div>
-        <div id="respawnBadge" class="badge">Resp: -</div>
+        <div id="bossBadge" class="badge">Resp: -</div>
       </div>
 
       <div class="content">
         <div class="row" style="justify-content:space-between;">
           <div class="small">
-            Start = kill teraz. Ptaszek w lewym panelu tez robi kill teraz (reset).
+            Config view: full controls. Use Monitor view for minimal, no-scroll watching.
           </div>
           <div class="row">
-            <button id="resetBossBtn" class="btn danger">Reset bossa</button>
+            <button id="resetBossBtn" class="btn danger">Reset boss</button>
           </div>
         </div>
 
         <div class="sep"></div>
 
-        <div class="channels" id="channels"></div>
+        <div id="respContainer"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MONITOR VIEW -->
+  <div id="monitorView" style="display:none;">
+    <section class="card">
+      <div class="cardHead">
+        <div>
+          <h1 id="monitorTitle" class="title">Monitor</h1>
+          <p id="monitorSub" class="sub">Columns per spawn, rows per channel (CH1-CH7).</p>
+        </div>
+        <div class="badge mono" id="monitorBadge">-</div>
+      </div>
+
+      <div class="content">
+        <div class="monitorTop">
+          <div class="small" id="monitorHint">Click the row = start timer. Use CFG to open config.</div>
+          <div class="row">
+            <button id="monitorKillAllBtn" class="btn">Kill ALL now (all spawns + CH1-CH7)</button>
+            <button id="monitorResetBossBtn" class="btn danger">Reset boss</button>
+          </div>
+        </div>
+
+        <div id="monitorColumns" class="monitorColumns"></div>
       </div>
     </section>
   </div>
@@ -403,27 +677,75 @@
 <div id="toast" class="toast"></div>
 
 <script>
-/** EDIT HERE */
+/* =========================
+   EDIT HERE: bosses + spawn categories + theme
+   ========================= */
 const BOSSES = [
-  { id: "dziewiec_ogonow1", name: "Dziewiec Ogonow srodek", respawnMin: 30, respawnMax: 60 },
-  { id: "dziewiec_ogonow2", name: "Dziewiec Ogonow gora", respawnMin: 30, respawnMax: 60 },
-  { id: "dziewiec_ogonow3", name: "Dziewiec Ogonow lewo", respawnMin: 30, respawnMax: 60 },
-  { id: "dziewiec_ogonow4", name: "Dziewiec Ogonow prawo", respawnMin: 30, respawnMax: 60 },
-  { id: "ognisty_krol1",    name: "Ognisty Krol srodek",    respawnMin: 60, respawnMax: 83 },
-  { id: "ognisty_krol2",   name: "Ognisty Krol prawo",   respawnMin: 60, respawnMax: 83 }
+  {
+    id: "dziewiec_ogonow",
+    name: "Dziewiec Ogonow",
+    theme: { accent: "#4aa3ff", accent2: "rgba(74,163,255,.18)" },
+    respawnMin: 30,
+    respawnMax: 30,
+    spawns: [
+      { id: "srodek", name: "Srodek" },
+      { id: "gora",   name: "Gora" },
+      { id: "lewo",   name: "Lewo" },
+      { id: "prawo",  name: "Prawo" }
+    ]
+  },
+  {
+    id: "ognisty_krol",
+    name: "Ognisty Krol",
+    theme: { accent: "#ff4d4d", accent2: "rgba(255,77,77,.18)" },
+    respawnMin: 60,
+    respawnMax: 83,
+    spawns: [
+      { id: "srodek",     name: "Srodek" },
+      { id: "prawo_gora", name: "Prawo gora" }
+    ]
+  },
+  {
+    id: "wladca_duchow",
+    name: "Wladca Duchow",
+    theme: { accent: "#9b7bff", accent2: "rgba(155,123,255,.18)" },
+    respawnMin: 45,
+    respawnMax: 55,
+    spawns: [
+      { id: "srodek", name: "Srodek" }
+    ]
+  }
 ];
 
 const CHANNELS = [1,2,3,4,5,6,7];
-const STORAGE_KEY = "boss_timers_v5_export_import";
+const STORAGE_KEY = "boss_timers_monitor_columns_v1";
 
+/*
+state structure:
+state[bossId][spawnId][channel] = lastKillMs | null
+*/
 let state = loadState();
 let activeBossId = BOSSES[0].id;
+let activeView = "config"; // "config" | "monitor"
 
+/* UI refs */
 const bossTabsEl = document.getElementById("bossTabs");
 const bossTitleEl = document.getElementById("bossTitle");
-const respawnBadgeEl = document.getElementById("respawnBadge");
-const channelsEl = document.getElementById("channels");
+const bossSubEl = document.getElementById("bossSub");
+const bossBadgeEl = document.getElementById("bossBadge");
+const respContainerEl = document.getElementById("respContainer");
 const resetBossBtn = document.getElementById("resetBossBtn");
+
+const configViewEl = document.getElementById("configView");
+const monitorViewEl = document.getElementById("monitorView");
+const viewConfigBtn = document.getElementById("viewConfigBtn");
+const viewMonitorBtn = document.getElementById("viewMonitorBtn");
+
+const monitorColumnsEl = document.getElementById("monitorColumns");
+const monitorBadgeEl = document.getElementById("monitorBadge");
+const monitorSubEl = document.getElementById("monitorSub");
+const monitorKillAllBtn = document.getElementById("monitorKillAllBtn");
+const monitorResetBossBtn = document.getElementById("monitorResetBossBtn");
 
 const alarmToggleEl = document.getElementById("alarmToggle");
 const volumeEl = document.getElementById("volume");
@@ -439,7 +761,7 @@ const importBtn = document.getElementById("importBtn");
 
 const toastEl = document.getElementById("toast");
 
-/** Drawer */
+/* Drawer */
 const openSettingsBtn = document.getElementById("openSettings");
 const closeSettingsBtn = document.getElementById("closeSettings");
 const drawer = document.getElementById("drawer");
@@ -460,54 +782,7 @@ closeSettingsBtn.addEventListener("click", closeDrawer);
 overlay.addEventListener("click", closeDrawer);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 
-/** Export/Import */
-exportBtn.addEventListener("click", async () => {
-  ensureBossState();
-  const payload = {
-    v: 1,
-    storageKey: STORAGE_KEY,
-    exportedAt: Date.now(),
-    state,
-    activeBossId
-  };
-  const text = JSON.stringify(payload);
-
-  // try clipboard, fallback to prompt
-  try{
-    await navigator.clipboard.writeText(text);
-    toast("Eksport: skopiowane do schowka");
-  }catch(e){
-    // ignore, show prompt
-  }
-  prompt("Skopiuj tekst eksportu:", text);
-});
-
-importBtn.addEventListener("click", () => {
-  const input = prompt("Wklej tekst eksportu:");
-  if (!input) return;
-
-  try{
-    const payload = JSON.parse(input);
-
-    // basic validation
-    if (!payload || typeof payload !== "object") throw new Error("bad payload");
-    if (!payload.state || typeof payload.state !== "object") throw new Error("no state");
-
-    // (optional) also restore active boss if exists
-    state = payload.state;
-    if (payload.activeBossId && typeof payload.activeBossId === "string"){
-      activeBossId = payload.activeBossId;
-    }
-
-    saveState();
-    toast("Import: zapisano, odswiezam...");
-    setTimeout(() => location.reload(), 350);
-  }catch(e){
-    alert("Nieprawidlowy format importu.");
-  }
-});
-
-/** Audio */
+/* Audio */
 let audioCtx = null;
 function beep(times = 3){
   if (!alarmToggleEl.checked) return;
@@ -531,274 +806,390 @@ function beep(times = 3){
   }
 }
 
-/** Init */
-function init(){
-  renderBossTabs();
-  setActiveBoss(activeBossId);
+/* Export/Import */
+exportBtn.addEventListener("click", async () => {
+  ensureStateShape();
+  const payload = { v: 1, exportedAt: Date.now(), activeBossId, activeView, state };
+  const text = JSON.stringify(payload);
 
-  resetBossBtn.addEventListener("click", () => {
-    const b = getBoss(activeBossId);
-    if (!state[activeBossId]) state[activeBossId] = {};
-    for (const ch of CHANNELS) state[activeBossId][ch] = null;
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Export: copied to clipboard");
+  }catch(e){
+    /* ignore */
+  }
+  prompt("Copy export text:", text);
+});
+
+importBtn.addEventListener("click", () => {
+  const input = prompt("Paste export text:");
+  if (!input) return;
+
+  try{
+    const payload = JSON.parse(input);
+    if (!payload || typeof payload !== "object") throw new Error("bad payload");
+    if (!payload.state || typeof payload.state !== "object") throw new Error("no state");
+
+    state = payload.state;
+    if (typeof payload.activeBossId === "string") activeBossId = payload.activeBossId;
+    if (payload.activeView === "monitor" || payload.activeView === "config") activeView = payload.activeView;
+
     saveState();
-    toast(`Reset: ${b.name}`);
-    renderChannels();
-    renderActiveWindows();
-  });
+    toast("Import: saved, reloading...");
+    setTimeout(() => location.reload(), 350);
+  }catch(e){
+    alert("Invalid import format.");
+  }
+});
 
-  testSoundBtn.addEventListener("click", () => beep(3));
-
-  setInterval(() => { nowEl.textContent = formatTime(Date.now()); }, 250);
-
-  setInterval(() => {
-    tick();
-    renderActiveWindows();
-  }, 250);
-
-  tick();
-  renderActiveWindows();
+/* Helpers */
+function getBoss(bossId){
+  return BOSSES.find(b => b.id === bossId) || BOSSES[0];
 }
 
+function applyBossTheme(boss){
+  document.documentElement.style.setProperty("--accent", boss.theme?.accent || "#4aa3ff");
+  document.documentElement.style.setProperty("--accent2", boss.theme?.accent2 || "rgba(74,163,255,.18)");
+}
+
+function ensureStateShape(){
+  for (const boss of BOSSES){
+    if (!state[boss.id] || typeof state[boss.id] !== "object") state[boss.id] = {};
+    for (const sp of boss.spawns){
+      if (!state[boss.id][sp.id] || typeof state[boss.id][sp.id] !== "object") state[boss.id][sp.id] = {};
+      for (const ch of CHANNELS){
+        if (typeof state[boss.id][sp.id][ch] === "undefined") state[boss.id][sp.id][ch] = null;
+      }
+    }
+  }
+  saveState();
+}
+
+function setKillNow(bossId, spawnId, ch){
+  ensureStateShape();
+  state[bossId][spawnId][ch] = Date.now();
+  saveState();
+}
+function setKillMs(bossId, spawnId, ch, ms){
+  ensureStateShape();
+  state[bossId][spawnId][ch] = ms;
+  saveState();
+}
+function clearKill(bossId, spawnId, ch){
+  ensureStateShape();
+  state[bossId][spawnId][ch] = null;
+  saveState();
+}
+function resetBoss(bossId){
+  ensureStateShape();
+  const boss = getBoss(bossId);
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      state[bossId][sp.id][ch] = null;
+    }
+  }
+  saveState();
+}
+
+/* View switch */
+function setView(view){
+  activeView = view;
+  const isConfig = view === "config";
+
+  configViewEl.style.display = isConfig ? "" : "none";
+  monitorViewEl.style.display = isConfig ? "none" : "";
+
+  viewConfigBtn.classList.toggle("active", isConfig);
+  viewMonitorBtn.classList.toggle("active", !isConfig);
+
+  if (isConfig){
+    renderRespGroups();
+    renderActiveWindows();
+    tickConfig();
+  } else {
+    renderMonitorColumns();
+    tickMonitorColumns();
+  }
+}
+
+/* Init / Render: Boss tabs */
 function renderBossTabs(){
   bossTabsEl.innerHTML = "";
-  for (const b of BOSSES){
+  for (const boss of BOSSES){
     const btn = document.createElement("button");
     btn.className = "pill";
-    btn.textContent = b.name;
-    btn.addEventListener("click", () => setActiveBoss(b.id));
-    btn.dataset.bossId = b.id;
+    btn.textContent = boss.name;
+    btn.dataset.bossId = boss.id;
+    btn.addEventListener("click", () => setActiveBoss(boss.id));
     bossTabsEl.appendChild(btn);
   }
 }
 
 function setActiveBoss(bossId){
   activeBossId = bossId;
-  const b = getBoss(bossId);
+  const boss = getBoss(bossId);
+
+  applyBossTheme(boss);
 
   [...bossTabsEl.querySelectorAll(".pill")].forEach(el => {
     el.classList.toggle("active", el.dataset.bossId === bossId);
   });
 
-  bossTitleEl.textContent = b.name;
+  bossTitleEl.textContent = boss.name;
 
-  const min = b.respawnMin;
-  const max = b.respawnMax;
-  respawnBadgeEl.textContent = (min === max) ? `Resp: ${min} min` : `Resp: ${min}-${max} min`;
+  const min = boss.respawnMin;
+  const max = boss.respawnMax;
+  bossBadgeEl.textContent = (min === max) ? `Resp: ${min}m` : `Resp: ${min}-${max}m`;
+  bossSubEl.textContent = `Spawns: ${boss.spawns.map(s => s.name).join(", ")} | Window: ${min === max ? (min + "m") : (min + "-" + max + "m")}`;
 
-  renderChannels();
-  tick();
-}
-
-function ensureBossState(){
-  for (const b of BOSSES){
-    if (!state[b.id]) state[b.id] = {};
-    for (const ch of CHANNELS){
-      if (typeof state[b.id][ch] === "undefined") state[b.id][ch] = null;
-    }
+  if (activeView === "config"){
+    renderRespGroups();
+    renderActiveWindows();
+    tickConfig();
+  } else {
+    renderMonitorColumns();
+    tickMonitorColumns();
   }
-  saveState();
 }
 
-function renderChannels(){
-  ensureBossState();
-  channelsEl.innerHTML = "";
-  const b = getBoss(activeBossId);
+/* CONFIG: resp groups */
+function renderRespGroups(){
+  ensureStateShape();
+  respContainerEl.innerHTML = "";
 
-  for (const ch of CHANNELS){
-    const box = document.createElement("div");
-    box.className = "chan";
-    box.id = `chan_${activeBossId}_${ch}`;
+  const boss = getBoss(activeBossId);
+  for (const sp of boss.spawns){
+    const group = document.createElement("div");
+    group.className = "respGroup";
 
-    const top = document.createElement("div");
-    top.className = "chanTop";
+    const head = document.createElement("div");
+    head.className = "respHead";
 
-    const name = document.createElement("div");
-    name.className = "chanName";
-    name.textContent = `CH${ch}`;
-
-    const st = document.createElement("div");
-    st.className = "state idle";
-    st.textContent = "brak startu";
-
-    top.appendChild(name);
-    top.appendChild(st);
-
-    const timer = document.createElement("div");
-    timer.className = "timer mono";
-    timer.textContent = "--:--";
+    const left = document.createElement("div");
+    left.className = "respName";
+    left.innerHTML = `<span class="respDot"></span>${sp.name}`;
 
     const meta = document.createElement("div");
-    meta.className = "meta";
+    meta.className = "respMeta";
+    meta.textContent = "CH1-CH7";
 
-    const lastKillLine = document.createElement("div");
-    lastKillLine.textContent = "Kill: -";
+    head.appendChild(left);
+    head.appendChild(meta);
 
-    const windowBig = document.createElement("div");
-    windowBig.className = "windowBig mono";
-    windowBig.innerHTML = `Okno: <span>--:-- - --:--</span>`;
+    const body = document.createElement("div");
+    body.className = "respBody";
 
-    const endWindowLine = document.createElement("div");
-    endWindowLine.textContent = "";
+    const channels = document.createElement("div");
+    channels.className = "channels";
+    channels.dataset.spawnId = sp.id;
 
-    meta.appendChild(lastKillLine);
-    meta.appendChild(windowBig);
-    meta.appendChild(endWindowLine);
+    for (const ch of CHANNELS){
+      const card = document.createElement("div");
+      card.className = "chan";
+      card.id = `chan_${activeBossId}_${sp.id}_${ch}`;
+      card.dataset.channel = String(ch);
+      card.dataset.spawnId = sp.id;
 
-    const controls = document.createElement("div");
-    controls.className = "row";
+      const top = document.createElement("div");
+      top.className = "chanTop";
 
-    const startBtn = document.createElement("button");
-    startBtn.className = "btn primary";
-    startBtn.textContent = "Start";
-    startBtn.title = "Ustaw kill time na teraz";
-    startBtn.addEventListener("click", () => {
-      state[activeBossId][ch] = Date.now();
-      saveState();
-      toast(`${b.name} CH${ch}: start`);
-      renderChannels();
-      renderActiveWindows();
-    });
+      const name = document.createElement("div");
+      name.className = "chanName";
+      name.textContent = `CH${ch}`;
 
-    const setBtn = document.createElement("button");
-    setBtn.className = "btn";
-    setBtn.textContent = "Ustaw czas...";
-    setBtn.title = "Wpisz czas kill'a (YYYY-MM-DD HH:MM)";
-    setBtn.addEventListener("click", () => {
-      const current = state[activeBossId][ch];
-      const def = current ? formatDateTime(current) : "";
-      const input = prompt("Podaj czas kill'a: YYYY-MM-DD HH:MM (np. 2026-01-21 17:05)", def);
-      if (!input) return;
+      const st = document.createElement("div");
+      st.className = "state idle";
+      st.textContent = "idle";
 
-      const ms = parseUserDateTime(input.trim());
-      if (!ms){
-        toast("Zly format daty/czasu.");
-        return;
-      }
-      state[activeBossId][ch] = ms;
-      saveState();
-      toast(`${b.name} CH${ch}: ustawiono`);
-      renderChannels();
-      renderActiveWindows();
-    });
+      top.appendChild(name);
+      top.appendChild(st);
 
-    const clearBtn = document.createElement("button");
-    clearBtn.className = "btn danger";
-    clearBtn.textContent = "Wyczysc";
-    clearBtn.addEventListener("click", () => {
-      state[activeBossId][ch] = null;
-      saveState();
-      toast(`${b.name} CH${ch}: wyczyszczono`);
-      renderChannels();
-      renderActiveWindows();
-    });
+      const timer = document.createElement("div");
+      timer.className = "timer mono";
+      timer.textContent = "--:--";
 
-    controls.appendChild(startBtn);
-    controls.appendChild(setBtn);
-    controls.appendChild(clearBtn);
+      const metaBox = document.createElement("div");
+      metaBox.className = "meta";
 
-    box.appendChild(top);
-    box.appendChild(timer);
-    box.appendChild(meta);
-    box.appendChild(controls);
+      const killLine = document.createElement("div");
+      killLine.textContent = "Kill: -";
 
-    box.dataset.channel = String(ch);
-    channelsEl.appendChild(box);
+      const windowBig = document.createElement("div");
+      windowBig.className = "windowBig mono";
+      windowBig.innerHTML = `Window: <span>--:-- - --:--</span>`;
+
+      const endLine = document.createElement("div");
+      endLine.textContent = "";
+
+      metaBox.appendChild(killLine);
+      metaBox.appendChild(windowBig);
+      metaBox.appendChild(endLine);
+
+      const controls = document.createElement("div");
+      controls.className = "row";
+
+      const startBtn = document.createElement("button");
+      startBtn.className = "btn primary";
+      startBtn.textContent = "Start";
+      startBtn.title = "Set kill time = now";
+      startBtn.addEventListener("click", () => {
+        setKillNow(activeBossId, sp.id, ch);
+        toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      const setBtn = document.createElement("button");
+      setBtn.className = "btn";
+      setBtn.textContent = "Set time...";
+      setBtn.title = "YYYY-MM-DD HH:MM";
+      setBtn.addEventListener("click", () => {
+        const current = state[activeBossId][sp.id][ch];
+        const def = current ? formatDateTime(current) : "";
+        const input = prompt("Kill time: YYYY-MM-DD HH:MM", def);
+        if (!input) return;
+
+        const ms = parseUserDateTime(input.trim());
+        if (!ms){
+          toast("Bad time format.");
+          return;
+        }
+        setKillMs(activeBossId, sp.id, ch, ms);
+        toast(`${boss.name} / ${sp.name} CH${ch}: set`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      const clearBtn = document.createElement("button");
+      clearBtn.className = "btn danger";
+      clearBtn.textContent = "Clear";
+      clearBtn.addEventListener("click", () => {
+        clearKill(activeBossId, sp.id, ch);
+        toast(`${boss.name} / ${sp.name} CH${ch}: cleared`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      controls.appendChild(startBtn);
+      controls.appendChild(setBtn);
+      controls.appendChild(clearBtn);
+
+      card.appendChild(top);
+      card.appendChild(timer);
+      card.appendChild(metaBox);
+      card.appendChild(controls);
+
+      channels.appendChild(card);
+    }
+
+    body.appendChild(channels);
+    group.appendChild(head);
+    group.appendChild(body);
+
+    respContainerEl.appendChild(group);
   }
+
+  tickConfig();
 }
 
-function tick(){
-  ensureBossState();
-  const b = getBoss(activeBossId);
+/* CONFIG tick */
+function tickConfig(){
+  ensureStateShape();
   const now = Date.now();
+  const boss = getBoss(activeBossId);
 
-  const cards = [...channelsEl.querySelectorAll(".chan")];
-  for (const card of cards){
+  const chanCards = [...respContainerEl.querySelectorAll(".chan")];
+  for (const card of chanCards){
+    const spId = card.dataset.spawnId;
     const ch = parseInt(card.dataset.channel, 10);
-    const lastKill = state[activeBossId]?.[ch] ?? null;
+    const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
 
     const stateEl = card.querySelector(".state");
     const timerEl = card.querySelector(".timer");
-
     const metaLines = card.querySelectorAll(".meta > div");
-    const lastKillLine = metaLines[0];
+    const killLine = metaLines[0];
     const windowBig = metaLines[1];
-    const endWindowLine = metaLines[2];
+    const endLine = metaLines[2];
 
     if (!lastKill){
       stateEl.className = "state idle";
-      stateEl.textContent = "brak startu";
+      stateEl.textContent = "idle";
       timerEl.textContent = "--:--";
-      lastKillLine.textContent = "Kill: -";
-      windowBig.innerHTML = `Okno: <span>--:-- - --:--</span>`;
-      endWindowLine.textContent = "";
+      killLine.textContent = "Kill: -";
+      windowBig.innerHTML = `Window: <span>--:-- - --:--</span>`;
+      endLine.textContent = "";
       continue;
     }
 
-    const minAt = lastKill + b.respawnMin * 60 * 1000;
-    const maxAt = lastKill + b.respawnMax * 60 * 1000;
+    const minAt = lastKill + boss.respawnMin * 60 * 1000;
+    const maxAt = lastKill + boss.respawnMax * 60 * 1000;
 
-    lastKillLine.textContent = `Kill: ${formatTime(lastKill)}`;
-    windowBig.innerHTML = `Okno: <span>${formatTime(minAt)} - ${formatTime(maxAt)}</span>`;
+    killLine.textContent = `Kill: ${formatTime(lastKill)}`;
+    windowBig.innerHTML = `Window: <span>${formatTime(minAt)} - ${formatTime(maxAt)}</span>`;
 
     const toMin = minAt - now;
     const toMax = maxAt - now;
 
     if (toMin > 0){
       stateEl.className = "state running";
-      stateEl.textContent = "ODLICZA";
+      stateEl.textContent = "count";
       timerEl.textContent = formatMMSS(toMin);
-      endWindowLine.textContent = `Do konca okna: ${formatMMSS(toMax)}`;
-      sessionStorage.removeItem(firedKeyMin(activeBossId, ch));
+      endLine.textContent = `To window end: ${formatMMSS(toMax)}`;
+      sessionStorage.removeItem(firedKeyMin(activeBossId, spId, ch));
     } else if (toMax > 0){
       stateEl.className = "state window";
-      stateEl.textContent = "OKNO RESPA";
+      stateEl.textContent = "window";
       timerEl.textContent = "00:00";
-      endWindowLine.textContent = `Do konca okna: ${formatMMSS(toMax)}`;
+      endLine.textContent = `To window end: ${formatMMSS(toMax)}`;
 
-      const key = firedKeyMin(activeBossId, ch);
+      const key = firedKeyMin(activeBossId, spId, ch);
       if (!sessionStorage.getItem(key)){
         sessionStorage.setItem(key, "1");
-        toast(`${b.name} CH${ch}: start okna respa!`);
+        toast(`${boss.name} / ${getSpawnName(activeBossId, spId)} CH${ch}: window start!`);
         beep(4);
       }
     } else {
       stateEl.className = "state ready";
-      stateEl.textContent = "PO OKNIE";
+      stateEl.textContent = "after";
       timerEl.textContent = "00:00";
-      endWindowLine.textContent = "Okno minelo (boss na pewno byl).";
-      sessionStorage.setItem(firedKeyMin(activeBossId, ch), "1");
+      endLine.textContent = "Window passed.";
+      sessionStorage.setItem(firedKeyMin(activeBossId, spId, ch), "1");
     }
   }
 }
 
+/* LEFT list (config view helper) */
 function renderActiveWindows(){
-  ensureBossState();
+  ensureStateShape();
   const now = Date.now();
-
   const active = [];
+
   for (const boss of BOSSES){
-    for (const ch of CHANNELS){
-      const lastKill = state[boss.id]?.[ch] ?? null;
-      if (!lastKill) continue;
+    for (const sp of boss.spawns){
+      for (const ch of CHANNELS){
+        const lastKill = state[boss.id]?.[sp.id]?.[ch] ?? null;
+        if (!lastKill) continue;
 
-      const minAt = lastKill + boss.respawnMin * 60 * 1000;
-      const maxAt = lastKill + boss.respawnMax * 60 * 1000;
+        const minAt = lastKill + boss.respawnMin * 60 * 1000;
+        const maxAt = lastKill + boss.respawnMax * 60 * 1000;
 
-      if (now >= minAt && now < maxAt){
-        active.push({
-          bossId: boss.id,
-          bossName: boss.name,
-          ch,
-          minAt,
-          maxAt,
-          toMax: maxAt - now
-        });
+        if (now >= minAt && now < maxAt){
+          active.push({
+            bossId: boss.id,
+            bossName: boss.name,
+            spawnId: sp.id,
+            spawnName: sp.name,
+            ch,
+            minAt,
+            maxAt,
+            toMax: maxAt - now
+          });
+        }
       }
     }
   }
 
   active.sort((a,b) => a.toMax - b.toMax);
-
   activeCountEl.textContent = String(active.length);
 
   activeListEl.innerHTML = "";
@@ -822,11 +1213,16 @@ function renderActiveWindows(){
     boss.className = "itemBoss";
     boss.textContent = it.bossName;
 
+    const resp = document.createElement("div");
+    resp.className = "itemResp";
+    resp.textContent = it.spawnName;
+
     const ch = document.createElement("div");
     ch.className = "itemCh";
     ch.textContent = `CH${it.ch}`;
 
     top.appendChild(boss);
+    top.appendChild(resp);
     top.appendChild(ch);
 
     const win = document.createElement("div");
@@ -835,70 +1231,305 @@ function renderActiveWindows(){
 
     const sub = document.createElement("div");
     sub.className = "itemSub";
-    sub.textContent = `Do konca okna: ${formatMMSS(it.toMax)}`;
+    sub.textContent = `To window end: ${formatMMSS(it.toMax)}`;
 
     main.appendChild(top);
     main.appendChild(win);
     main.appendChild(sub);
 
     const right = document.createElement("div");
-    right.className = "tickWrap";
-
-    const lbl = document.createElement("label");
-    lbl.title = "Zaznacz = kill teraz (resetuje timer)";
-
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.className = "tick";
+    cb.title = "Check = kill now (restart)";
     cb.addEventListener("click", (e) => {
       e.stopPropagation();
-      state[it.bossId][it.ch] = Date.now();
-      saveState();
-      toast(`${it.bossName} CH${it.ch}: reset (kill teraz)`);
-      if (activeBossId === it.bossId){
-        renderChannels();
+      setKillNow(it.bossId, it.spawnId, it.ch);
+      toast(`${it.bossName} / ${it.spawnName} CH${it.ch}: restart`);
+      if (activeBossId === it.bossId && activeView === "config"){
+        renderRespGroups();
       }
       renderActiveWindows();
       cb.checked = false;
     });
 
-    lbl.appendChild(cb);
-    right.appendChild(lbl);
+    right.appendChild(cb);
 
     row.appendChild(main);
     row.appendChild(right);
 
     row.addEventListener("click", () => {
       setActiveBoss(it.bossId);
+      setView("config");
       setTimeout(() => {
-        const el = document.getElementById(`chan_${it.bossId}_${it.ch}`);
+        const el = document.getElementById(`chan_${it.bossId}_${it.spawnId}_${it.ch}`);
         if (el){
           el.scrollIntoView({ behavior:"smooth", block:"center" });
           el.classList.add("flash");
           setTimeout(() => el.classList.remove("flash"), 700);
         }
-      }, 50);
+      }, 60);
     });
 
     activeListEl.appendChild(row);
   }
 }
 
-function firedKeyMin(bossId, ch){ return `fired_min_${bossId}_${ch}`; }
+/* MONITOR: columns per spawn, rows per channel */
+function computeStatus(boss, lastKillMs){
+  const now = Date.now();
+  if (!lastKillMs) return { kind:"idle" };
 
-/** Storage */
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return (parsed && typeof parsed === "object") ? parsed : {};
-  }catch(e){ return {}; }
+  const minAt = lastKillMs + boss.respawnMin * 60 * 1000;
+  const maxAt = lastKillMs + boss.respawnMax * 60 * 1000;
+
+  const toMin = minAt - now;
+  const toMax = maxAt - now;
+
+  if (toMin > 0){
+    return { kind:"running", toMin, toMax, minAt, maxAt };
+  }
+  if (toMax > 0){
+    return { kind:"window", toMin:0, toMax, minAt, maxAt };
+  }
+  return { kind:"ready", toMin:0, toMax:0, minAt, maxAt };
 }
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-/** Utils */
-function getBoss(id){ return BOSSES.find(b => b.id === id) || BOSSES[0]; }
+function renderMonitorColumns(){
+  ensureStateShape();
+  const boss = getBoss(activeBossId);
+
+  monitorSubEl.textContent =
+    `Boss: ${boss.name} | Spawns: ${boss.spawns.map(s => s.name).join(", ")} | Window: ${
+      boss.respawnMin === boss.respawnMax ? (boss.respawnMin + "m") : (boss.respawnMin + "-" + boss.respawnMax + "m")
+    }`;
+
+  monitorBadgeEl.textContent = (boss.respawnMin === boss.respawnMax)
+    ? `Resp ${boss.respawnMin}m`
+    : `Resp ${boss.respawnMin}-${boss.respawnMax}m`;
+
+  monitorColumnsEl.innerHTML = "";
+
+  for (const sp of boss.spawns){
+    const col = document.createElement("div");
+    col.className = "spawnCol";
+    col.dataset.spawnId = sp.id;
+
+    const head = document.createElement("div");
+    head.className = "spawnColHead";
+
+    const nm = document.createElement("div");
+    nm.className = "spawnColName";
+    nm.innerHTML = `<span class="spawnColDot"></span>${sp.name}`;
+
+    const mini = document.createElement("div");
+    mini.className = "small";
+    mini.textContent = "CH1-CH7";
+
+    head.appendChild(nm);
+    head.appendChild(mini);
+
+    const body = document.createElement("div");
+    body.className = "spawnColBody";
+
+    for (const ch of CHANNELS){
+      const row = document.createElement("div");
+      row.className = "chRow";
+      row.dataset.spawnId = sp.id;
+      row.dataset.channel = String(ch);
+
+      const chName = document.createElement("div");
+      chName.className = "chName mono";
+      chName.textContent = `ch${ch}`;
+
+      const main = document.createElement("div");
+      main.className = "chMain";
+
+      const t = document.createElement("div");
+      t.className = "chTimer mono";
+      t.textContent = "--:--";
+
+      const w = document.createElement("div");
+      w.className = "chWindow mono";
+      w.textContent = "--:-- - --:--";
+
+      main.appendChild(t);
+      main.appendChild(w);
+
+      const actions = document.createElement("div");
+      actions.className = "chActions";
+
+      const badge = document.createElement("span");
+      badge.className = "chBadge idle";
+      badge.textContent = "idle";
+
+      const cfg = document.createElement("button");
+      cfg.type = "button";
+      cfg.className = "cfgBtn";
+      cfg.textContent = "CFG";
+      cfg.title = "Go to config for this channel";
+      cfg.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setView("config");
+        setTimeout(() => {
+          const el = document.getElementById(`chan_${activeBossId}_${sp.id}_${ch}`);
+          if (el){
+            el.scrollIntoView({ behavior:"smooth", block:"center" });
+            el.classList.add("flash");
+            setTimeout(() => el.classList.remove("flash"), 700);
+          }
+        }, 80);
+      });
+
+      actions.appendChild(badge);
+      actions.appendChild(cfg);
+
+      row.appendChild(chName);
+      row.appendChild(main);
+      row.appendChild(actions);
+
+      // CLICK WHOLE ROW = START TIMER (kill now)
+      row.addEventListener("click", () => {
+        setKillNow(activeBossId, sp.id, ch);
+        toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+        tickMonitorColumns();
+        renderActiveWindows();
+      });
+
+      body.appendChild(row);
+    }
+
+    col.appendChild(head);
+    col.appendChild(body);
+    monitorColumnsEl.appendChild(col);
+  }
+
+  tickMonitorColumns();
+}
+
+function tickMonitorColumns(){
+  ensureStateShape();
+  if (activeView !== "monitor") return;
+
+  const boss = getBoss(activeBossId);
+  const rows = [...monitorColumnsEl.querySelectorAll(".chRow")];
+
+  for (const row of rows){
+    const spId = row.dataset.spawnId;
+    const ch = parseInt(row.dataset.channel, 10);
+
+    const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
+    const status = computeStatus(boss, lastKill);
+
+    const timerEl = row.querySelector(".chTimer");
+    const windowEl = row.querySelector(".chWindow");
+    const badgeEl = row.querySelector(".chBadge");
+
+    if (status.kind === "idle"){
+      badgeEl.className = "chBadge idle";
+      badgeEl.textContent = "idle";
+      timerEl.textContent = "--:--";
+      windowEl.textContent = "--:-- - --:--";
+      continue;
+    }
+
+    windowEl.textContent = `${formatTime(status.minAt)} - ${formatTime(status.maxAt)}`;
+
+    if (status.kind === "running"){
+      badgeEl.className = "chBadge running";
+      badgeEl.textContent = "count";
+      timerEl.textContent = formatMMSS(status.toMin);
+      sessionStorage.removeItem(firedKeyMin(activeBossId, spId, ch));
+      continue;
+    }
+
+    if (status.kind === "window"){
+      badgeEl.className = "chBadge window";
+      badgeEl.textContent = "window";
+      timerEl.textContent = "00:00";
+
+      const key = firedKeyMin(activeBossId, spId, ch);
+      if (!sessionStorage.getItem(key)){
+        sessionStorage.setItem(key, "1");
+        toast(`${boss.name} / ${getSpawnName(activeBossId, spId)} CH${ch}: window start!`);
+        beep(4);
+      }
+      continue;
+    }
+
+    badgeEl.className = "chBadge ready";
+    badgeEl.textContent = "after";
+    timerEl.textContent = "00:00";
+    sessionStorage.setItem(firedKeyMin(activeBossId, spId, ch), "1");
+  }
+}
+
+/* Buttons */
+viewConfigBtn.addEventListener("click", () => setView("config"));
+viewMonitorBtn.addEventListener("click", () => setView("monitor"));
+
+resetBossBtn.addEventListener("click", () => {
+  resetBoss(activeBossId);
+  toast(`Reset: ${getBoss(activeBossId).name}`);
+  renderRespGroups();
+  renderActiveWindows();
+  if (activeView === "monitor"){
+    renderMonitorColumns();
+  }
+});
+
+monitorResetBossBtn.addEventListener("click", () => {
+  resetBoss(activeBossId);
+  toast(`Reset: ${getBoss(activeBossId).name}`);
+  renderMonitorColumns();
+  renderActiveWindows();
+});
+
+monitorKillAllBtn.addEventListener("click", () => {
+  const boss = getBoss(activeBossId);
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      setKillNow(activeBossId, sp.id, ch);
+    }
+  }
+  toast(`${boss.name}: kill all now (all spawns + CH1-CH7)`);
+  tickMonitorColumns();
+  renderActiveWindows();
+});
+
+/* Settings */
+testSoundBtn.addEventListener("click", () => beep(3));
+
+/* Timers loop */
+setInterval(() => { nowEl.textContent = formatTime(Date.now()); }, 250);
+setInterval(() => {
+  if (activeView === "config"){
+    tickConfig();
+    renderActiveWindows();
+  } else {
+    tickMonitorColumns();
+  }
+}, 250);
+
+/* Boot */
+function init(){
+  ensureStateShape();
+  renderBossTabs();
+  setActiveBoss(activeBossId);
+  setView(activeView);
+}
+init();
+
+/* Utils */
+function getSpawnName(bossId, spawnId){
+  const boss = getBoss(bossId);
+  const sp = boss.spawns.find(s => s.id === spawnId);
+  return sp ? sp.name : spawnId;
+}
+
+function firedKeyMin(bossId, spawnId, ch){
+  return `fired_min_${bossId}_${spawnId}_${ch}`;
+}
 
 function formatMMSS(ms){
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -930,6 +1561,18 @@ function parseUserDateTime(str){
 }
 function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
 
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === "object") ? parsed : {};
+  }catch(e){ return {}; }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 let toastTimer = null;
 function toast(msg){
   toastEl.textContent = msg;
@@ -937,10 +1580,6 @@ function toast(msg){
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 2200);
 }
-
-/** Boot */
-init();
 </script>
 </body>
 </html>
-
