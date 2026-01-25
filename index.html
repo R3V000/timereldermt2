@@ -201,6 +201,7 @@
     }
     .state.window{ color:var(--warn); border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10); }
     .state.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); background:rgba(73,210,125,.08); }
+    .state.after{ color:var(--danger); border-color:rgba(255,90,106,.45); background:rgba(255,90,106,.10); }
     .state.lured{ color:var(--warn); border-color:rgba(255,209,102,.45); background:rgba(255,209,102,.10); }
 
     .timer{
@@ -699,6 +700,33 @@
 .qCh.window{ animation: pulseWindow 1.6s ease-in-out infinite; border-color: rgba(73,210,125,.65); }
 .qCh.lured{ animation: pulseLured 1.8s ease-in-out infinite; border-color: rgba(255,209,102,.65); }
 
+
+/* ===== After-window (missed) state ===== */
+@keyframes pulseAfter {
+  0% { background: rgba(255,90,106,.08); }
+  50% { background: rgba(255,90,106,.22); }
+  100% { background: rgba(255,90,106,.08); }
+}
+
+.chRow.after{
+  animation: pulseAfter 1.5s ease-in-out infinite;
+  border-color: rgba(255,90,106,.55);
+}
+.chRow.after .chWindow{
+  color: var(--danger);
+}
+.chBadge.after{
+  color: var(--danger);
+  border-color: rgba(255,90,106,.45);
+}
+
+.qCh.after{ animation: pulseAfter 1.5s ease-in-out infinite; border-color: rgba(255,90,106,.65); }
+
+.chan.after{
+  border-color: rgba(255,90,106,.55);
+  box-shadow:0 0 0 4px rgba(255,90,106,.10), var(--shadow);
+}
+
 </style>
 </head>
 
@@ -1127,6 +1155,19 @@ async function clearKill(bossId, spawnId, ch){
 
   if (error) console.error("Supabase clearKill error:", error);
 }
+
+async function setLuredFlag(bossId, spawnId, ch, flag){
+  ensureStateShape();
+  stateLured[bossId][spawnId][ch] = !!flag;
+  saveStateLured(); // local cache
+
+  const ms = state?.[bossId]?.[spawnId]?.[ch] ?? null;
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms, lured: !!flag });
+
+  if (error) console.error("Supabase setLuredFlag error:", error);
+}
 async function resetBoss(bossId){
   ensureStateShape();
   const boss = getBoss(bossId);
@@ -1294,6 +1335,8 @@ function renderRespGroups(){
       startBtn.textContent = "Start";
       startBtn.title = "Set kill time = now";
       startBtn.addEventListener("click", () => {
+        const isLuredHere = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+        if (isLuredHere){ toast("Odlurowany: uzyj ZABITY w Monitorze."); return; }
         setKillNow(activeBossId, sp.id, ch, false);
         toast(`${boss.name} / ${sp.name} CH${ch}: start`);
         renderRespGroups();
@@ -1371,6 +1414,7 @@ function tickConfig(){
     const killLine = metaLines[0];
     const windowBig = metaLines[1];
     const endLine = metaLines[2];
+    card.classList.remove("after");
 
     if (!lastKill){
       stateEl.className = "state idle";
@@ -1420,8 +1464,9 @@ function tickConfig(){
         beep(4);
       }
     } else {
+      card.classList.add("after");
       if (!isLured){
-      stateEl.className = "state ready";
+      stateEl.className = "state after";
       stateEl.textContent = "after";
       }
       timerEl.textContent = "00:00";
@@ -1517,7 +1562,12 @@ function renderActiveWindows(){
     cb.title = "Check = kill now (restart)";
     cb.addEventListener("click", (e) => {
       e.stopPropagation();
-      setKillNow(it.bossId, it.spawnId, it.ch);
+      if (!!(stateLured?.[it.bossId]?.[it.spawnId]?.[it.ch])){
+          setLuredFlag(it.bossId, it.spawnId, it.ch, false);
+          toast("Zabity (odlure off).");
+          return;
+        }
+        setKillNow(it.bossId, it.spawnId, it.ch, false);
       toast(`${it.bossName} / ${it.spawnName} CH${it.ch}: restart`);
       if (activeBossId === it.bossId && activeView === "config"){
         renderRespGroups();
@@ -1565,10 +1615,17 @@ function getSpawnChannelState(bossId, spawnId, ch){
 
   if (now >= minAt && now < maxAt) return "window";
   if (now < minAt && (minAt - now) <= 2*60*1000) return "soon";
+  if (now >= maxAt) return "after";
   return "normal";
 }
 
 async function restartSpawnChannel(bossId, spawnId, ch){
+  const isLuredHere = !!(stateLured?.[bossId]?.[spawnId]?.[ch]);
+  if (isLuredHere){
+    await setLuredFlag(bossId, spawnId, ch, false);
+    toast("Zabity (odlure off).");
+    return;
+  }
   await setKillNow(bossId, spawnId, ch, false);
 }
 
@@ -1600,8 +1657,11 @@ function renderQuickPanel(){
 
         btn.title = "Klik = start timera dla tego respa na tym kanale";
         btn.addEventListener("click", async () => {
+          const wasLured = !!(stateLured?.[boss.id]?.[sp.id]?.[ch]);
           await restartSpawnChannel(boss.id, sp.id, ch);
-          toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+          if (!wasLured){
+            toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+          }
           // refresh visible views
           if (activeView === "monitor"){
             tickMonitorColumns();
@@ -1750,11 +1810,26 @@ function renderMonitorColumns(){
       row.appendChild(actions);
 
       // CLICK WHOLE ROW = START TIMER (kill now)
-      row.addEventListener("click", () => {
-        setKillNow(activeBossId, sp.id, ch);
+      row.addEventListener("click", async () => {
+        // If it LOOKS lured (yellow), treat as lured (anti-desync)
+        const isLuredVisual = row.classList.contains("lured");
+        const isLuredState = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+
+        if (isLuredVisual || isLuredState){
+          // remove lured WITHOUT resetting timer
+          await setLuredFlag(activeBossId, sp.id, ch, false);
+          toast("Zabity (odlure off).");
+          renderMonitorColumns();
+          renderActiveWindows();
+          renderQuickPanel();
+          return;
+        }
+
+        await setKillNow(activeBossId, sp.id, ch, false);
         toast(`${boss.name} / ${sp.name} CH${ch}: start`);
         tickMonitorColumns();
         renderActiveWindows();
+        renderQuickPanel();
       });
 
       body.appendChild(row);
@@ -1782,7 +1857,7 @@ function tickMonitorColumns(){
     const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
     const status = computeStatus(boss, lastKill);
     // visual alerts
-    row.classList.remove("soon","window","lured");
+    row.classList.remove("soon","window","lured","after");
 
     const isLured = !!(stateLured?.[activeBossId]?.[spId]?.[ch]);
     if (isLured){
@@ -1797,6 +1872,11 @@ function tickMonitorColumns(){
     // window active
     if (status.kind === "window"){
       row.classList.add("window");
+    }
+
+    // after window (missed)
+    if (!isLured && status.kind === "ready"){
+      row.classList.add("after");
     }
 
 
@@ -1848,7 +1928,7 @@ function tickMonitorColumns(){
     }
 
     if (!isLured){
-    badgeEl.className = "chBadge ready";
+    badgeEl.className = "chBadge after";
     badgeEl.textContent = "after";
     }
     timerEl.textContent = "00:00";
@@ -2074,4 +2154,3 @@ function toast(msg){
 </script>
 </body>
 </html>
-
