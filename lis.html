@@ -1,0 +1,2126 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LIS Timery</title>
+
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --panel:#121a2b;
+      --text:#e8eefc;
+      --muted:#a9b6d6;
+
+      /* Theme changes per boss */
+      --accent:#4aa3ff;
+      --accent2: rgba(74,163,255,.18);
+
+      --danger:#ff5a6a;
+      --ok:#49d27d;
+      --warn:#ffd166;
+
+      --border:rgba(255,255,255,.10);
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 700px at 25% 10%, var(--accent2), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(11,15,25,.75);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav{
+      display:flex; gap:10px; align-items:center;
+      padding:14px 16px;
+      max-width:1280px; margin:0 auto;
+      flex-wrap:wrap;
+    }
+    .brand{
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-right:6px;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      white-space:nowrap;
+    }
+    .brandDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+      display:inline-block;
+    }
+
+    .pill{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform .08s ease, border-color .2s ease, box-shadow .2s ease;
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .pill:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,.18); }
+    .pill.active{
+      border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.20));
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .spacer{ flex:1; min-width:12px; }
+
+    main{
+      max-width:1280px;
+      margin:18px auto 40px;
+      padding:0 16px;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .cardHead{
+      padding:16px 16px 10px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    .title{ font-size:18px; font-weight:900; margin:0; }
+    .sub{ margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.3; }
+    .badge{
+      font-size:12px; color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:999px; padding:6px 10px;
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+
+    .content{ padding:14px 16px 16px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .btn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .08s ease, border-color .2s ease;
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,.18); }
+    .btn.primary{
+      background: color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.05));
+      border-color: color-mix(in srgb, var(--accent) 45%, rgba(255,255,255,.10));
+    }
+    .btn.danger{
+      background:rgba(255,90,106,.14);
+      border-color:rgba(255,90,106,.45);
+    }
+
+    .seg{
+      display:flex;
+      border:1px solid var(--border);
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.03);
+    }
+    .seg button{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      padding:8px 12px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .seg button.active{
+      color:var(--text);
+      background: color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.03));
+    }
+
+    /* CONFIG: per-respawn channel grid */
+    .channels{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+    @media (max-width: 900px){ .channels{ grid-template-columns:repeat(2, 1fr); } }
+    @media (max-width: 520px){ .channels{ grid-template-columns:1fr; } }
+
+    .chan{
+      background:rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      scroll-margin-top: 92px;
+      transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    .chan.flash{
+      border-color: color-mix(in srgb, var(--accent) 80%, rgba(255,255,255,.10));
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent), var(--shadow);
+    }
+
+    .chanTop{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .chanName{ font-weight:950; letter-spacing:.3px; }
+    .state{
+      font-size:12px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .state.idle{ color:var(--muted); }
+    .state.running{
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 35%, rgba(255,255,255,.10));
+      background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.03));
+    }
+    .state.window{ color:var(--warn); border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10); }
+    .state.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); background:rgba(73,210,125,.08); }
+    .state.after{ color:var(--danger); border-color:rgba(255,90,106,.45); background:rgba(255,90,106,.10); }
+    .state.lured{ color:var(--warn); border-color:rgba(255,209,102,.45); background:rgba(255,209,102,.10); }
+
+    .timer{
+      font-variant-numeric: tabular-nums;
+      font-size:24px; font-weight:950; letter-spacing:.5px;
+      margin:6px 0 6px;
+    }
+    .meta{
+      font-size:12px; color:var(--muted);
+      display:flex; flex-direction:column; gap:3px;
+      margin-bottom:10px;
+    }
+    .windowBig{
+      font-variant-numeric: tabular-nums;
+      font-size:18px;
+      font-weight:950;
+      color:var(--text);
+      margin-top:2px;
+    }
+    .windowBig span{ color:var(--warn); }
+
+    .sep{ height:1px; background:var(--border); margin:10px 0; }
+    .small{ font-size:12px; color:var(--muted); line-height:1.35; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    label{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+    input[type="number"]{
+      width:90px; padding:8px 10px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(0,0,0,.18); color:var(--text);
+    }
+
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(18,26,43,.95);
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:10px 14px;
+      box-shadow:var(--shadow);
+      color:var(--text);
+      font-size:13px;
+      display:none;
+      z-index:50;
+    }
+
+    /* Drawer (hidden settings) */
+    .fabSettings{
+      position:fixed;
+      right:14px;
+      top:86px;
+      z-index:60;
+      border:1px solid var(--border);
+      background:rgba(18,26,43,.92);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      box-shadow:var(--shadow);
+      user-select:none;
+    }
+    .drawerOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.45);
+      backdrop-filter: blur(2px);
+      z-index:70;
+      display:none;
+    }
+    .drawer{
+      position:fixed;
+      top:0; right:0;
+      height:100vh;
+      width:360px;
+      max-width:86vw;
+      background:rgba(18,26,43,.98);
+      border-left:1px solid var(--border);
+      box-shadow:var(--shadow);
+      z-index:80;
+      transform:translateX(100%);
+      transition:transform .18s ease;
+      display:flex;
+      flex-direction:column;
+    }
+    .drawer.open{ transform:translateX(0); }
+    .drawerOverlay.open{ display:block; }
+    .drawerHead{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .drawerTitle{ font-weight:950; }
+    .drawerBody{ padding:12px 14px 16px; overflow:auto; }
+    .kv{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .kv:last-child{ border-bottom:none; }
+
+    /* Left panel: active windows */
+    .leftHeadActions{ display:flex; gap:8px; align-items:center; }
+    .chip{
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:12px 12px 14px;
+    }
+    .item{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.14);
+      border-radius:14px;
+      padding:10px 10px;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .2s ease;
+    }
+    .item:hover{
+      transform:translateY(-1px);
+      border-color: rgba(255,209,102,.45);
+    }
+    .itemMain{ display:flex; flex-direction:column; gap:3px; }
+    .itemTop{
+      display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;
+    }
+    .itemBoss{ font-weight:950; }
+    .itemResp,
+    .itemCh{
+      color:var(--muted);
+      font-size:12px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:3px 8px;
+      background:rgba(255,255,255,.03);
+    }
+    .itemWindow{
+      font-variant-numeric: tabular-nums;
+      font-size:13px;
+      font-weight:900;
+      color:var(--warn);
+    }
+    .itemSub{ color:var(--muted); font-size:12px; }
+    .tick{
+      width:18px; height:18px;
+      accent-color: var(--ok);
+      cursor:pointer;
+    }
+    .empty{
+      padding:14px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    /* Respawn group (config) */
+    .respGroup{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      background: rgba(0,0,0,.10);
+    }
+    .respHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+    .respName{
+      font-weight:950;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .respDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+    .respMeta{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:6px 10px;
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .respBody{
+      padding:12px 12px 14px;
+    }
+
+    /* MONITOR (columns per spawn, rows per channel) */
+    .monitorTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .monitorColumns{
+      display:grid;
+      gap:12px;
+      align-items:stretch;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .spawnCol{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(0,0,0,.14);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .spawnColHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+
+    .spawnColName{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:950;
+      letter-spacing:.2px;
+    }
+    .spawnColDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+
+    .spawnColBody{
+      padding:10px 10px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .chRow{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      border-radius:14px;
+      padding:10px 10px;
+      display:grid;
+      grid-template-columns: 52px 1fr auto;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+    }
+
+    .chName{
+      font-weight:900;
+      color:var(--muted);
+      text-transform:lowercase;
+    }
+
+    .chMain{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+
+    .chTimer{
+      font-variant-numeric: tabular-nums;
+      font-size:20px;
+      font-weight:950;
+      letter-spacing:.4px;
+      line-height:1;
+    }
+
+    .chWindow{
+      font-variant-numeric: tabular-nums;
+      font-size:12px;
+      font-weight:900;
+      color:var(--warn);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .chBadge{
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 8px;
+      background:rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .chBadge.running{ color:var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, rgba(255,255,255,.10)); }
+    .chBadge.window{ color:var(--warn); border-color:rgba(255,209,102,.35); }
+    .chBadge.ready{ color:var(--ok); border-color:rgba(73,210,125,.35); }
+    .chBadge.idle{ color:var(--muted); }
+
+    .chActions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .cfgBtn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.3px;
+      cursor:pointer;
+      user-select:none;
+      min-width:56px;
+      text-align:center;
+    }
+    .cfgBtn:hover{
+      border-color: color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.15));
+      background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,.05));
+    }
+  
+/* ===== Timer visual alerts ===== */
+@keyframes pulseSoon {
+  0% { background: rgba(160,160,160,.08); }
+  50% { background: rgba(160,160,160,.22); }
+  100% { background: rgba(160,160,160,.08); }
+}
+@keyframes pulseWindow {
+  0% { background: rgba(73,210,125,.10); }
+  50% { background: rgba(73,210,125,.28); }
+  100% { background: rgba(73,210,125,.10); }
+}
+
+.chRow.soon {
+  animation: pulseSoon 1.4s ease-in-out infinite;
+  border-color: rgba(160,160,160,.35);
+}
+
+.chRow.window {
+  animation: pulseWindow 1.6s ease-in-out infinite;
+  border-color: rgba(73,210,125,.55);
+}
+
+.chRow.window .chTimer {
+  color: var(--ok);
+}
+
+
+/* ===== Lured (odlurowany) state ===== */
+@keyframes pulseLured {
+  0% { background: rgba(255,209,102,.08); }
+  50% { background: rgba(255,209,102,.22); }
+  100% { background: rgba(255,209,102,.08); }
+}
+.chRow.lured{
+  animation: pulseLured 1.8s ease-in-out infinite;
+  border-color: rgba(255,209,102,.55);
+}
+.chRow.lured .chWindow{
+  color: var(--warn);
+}
+.chBadge.lured{
+  color: var(--warn);
+  border-color: rgba(255,209,102,.45);
+}
+.cfgBtn.luredBtn{
+  border-color: rgba(255,209,102,.55);
+  background: rgba(255,209,102,.10);
+}
+.cfgBtn.luredBtn:hover{
+  border-color: rgba(255,209,102,.80);
+  background: rgba(255,209,102,.16);
+}
+
+
+/* ===== Quick Overview Drawer (boss -> channels) ===== */
+.quickFab{
+  position:fixed;
+  left:14px;
+  top:140px;
+  z-index:65;
+  border:1px solid var(--border);
+  background:rgba(18,26,43,.92);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:999px;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+  user-select:none;
+}
+
+.quickOverlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.35);
+  backdrop-filter: blur(1px);
+  z-index:75;
+  display:none;
+}
+.quickOverlay.open{ display:block; }
+
+.quickDrawer{
+  position:fixed;
+  top:0; left:0;
+  height:100vh;
+  width:360px;
+  max-width:86vw;
+  background:rgba(18,26,43,.98);
+  border-right:1px solid var(--border);
+  box-shadow:var(--shadow);
+  z-index:85;
+  transform:translateX(-100%);
+  transition:transform .18s ease;
+  display:flex;
+  flex-direction:column;
+}
+.quickDrawer.open{ transform:translateX(0); }
+
+.quickHead{
+  padding:14px 14px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.quickTitle{ font-weight:950; }
+.quickBody{
+  padding:12px 14px 16px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.qBoss{
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  background:rgba(255,255,255,.03);
+}
+.qBossName{
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+  font-weight:950;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.qBossName .mini{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.qChannels{
+  padding:12px 12px 14px;
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:10px;
+}
+.qCh{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 0;
+  text-align:center;
+  font-weight:950;
+  cursor:pointer;
+  user-select:none;
+  background:rgba(0,0,0,.12);
+}
+.qCh:hover{
+  border-color: color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.15));
+}
+
+/* reuse pulses but apply to channel boxes */
+.qCh.soon{ animation: pulseSoon 1.4s ease-in-out infinite; border-color: rgba(160,160,160,.45); }
+.qCh.window{ animation: pulseWindow 1.6s ease-in-out infinite; border-color: rgba(73,210,125,.65); }
+.qCh.lured{ animation: pulseLured 1.8s ease-in-out infinite; border-color: rgba(255,209,102,.65); }
+
+
+/* ===== After-window (missed) state ===== */
+@keyframes pulseAfter {
+  0% { background: rgba(255,90,106,.08); }
+  50% { background: rgba(255,90,106,.22); }
+  100% { background: rgba(255,90,106,.08); }
+}
+
+.chRow.after{
+  animation: pulseAfter 1.5s ease-in-out infinite;
+  border-color: rgba(255,90,106,.55);
+}
+.chRow.after .chWindow{
+  color: var(--danger);
+}
+.chBadge.after{
+  color: var(--danger);
+  border-color: rgba(255,90,106,.45);
+}
+
+.qCh.after{ animation: pulseAfter 1.5s ease-in-out infinite; border-color: rgba(255,90,106,.65); }
+
+.chan.after{
+  border-color: rgba(255,90,106,.55);
+  box-shadow:0 0 0 4px rgba(255,90,106,.10), var(--shadow);
+}
+
+</style>
+</head>
+
+<body>
+<header>
+  <div class="nav">
+    <div class="brand"><span class="brandDot"></span>LIS Timery</div>
+
+    <div id="bossTabs" class="row" style="gap:8px;"></div>
+
+    <div class="spacer"></div>
+
+    <div class="seg" role="tablist" aria-label="View mode">
+      <button id="viewConfigBtn" class="active" type="button">Config</button>
+      <button id="viewMonitorBtn" type="button">Monitor</button>
+    </div>
+  </div>
+</header>
+
+<button id="openQuick" class="quickFab" title="Podglad">Podglad</button>
+<button id="openSettings" class="fabSettings" title="Settings">Settings</button>
+
+<div id="drawerOverlay" class="drawerOverlay"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawerHead">
+    <div class="drawerTitle">Settings</div>
+    <button id="closeSettings" class="btn">Close</button>
+  </div>
+  <div class="drawerBody">
+    <div class="kv">
+      <span>Alarm</span>
+      <label><input id="alarmToggle" type="checkbox" checked /> on</label>
+    </div>
+    <div class="kv">
+      <span>Volume</span>
+      <input id="volume" type="number" min="0" max="100" step="5" value="60" />
+    </div>
+    <div class="kv">
+      <span>Test sound</span>
+      <button id="testSoundBtn" class="btn primary">Play</button>
+    </div>
+
+    <div class="kv">
+      <span>State</span>
+      <div class="row" style="gap:8px;">
+        <button id="exportBtn" class="btn">Export</button>
+        <button id="importBtn" class="btn">Import</button>
+      </div>
+    </div>
+
+    <div class="kv">
+      <span>Now</span>
+      <b id="now" class="mono">--:--</b>
+    </div>
+
+    <div class="sep"></div>
+    <div class="small">
+      Local state per browser. Export/Import = handover.
+    </div>
+  </div>
+</aside>
+
+
+<div id="quickOverlay" class="quickOverlay"></div>
+<aside id="quickDrawer" class="quickDrawer" aria-hidden="true">
+  <div class="quickHead">
+    <div class="quickTitle">Podglad kanalow</div>
+    <button id="closeQuick" class="btn">Close</button>
+  </div>
+  <div id="quickBody" class="quickBody"></div>
+</aside>
+
+<main>
+  <!-- CONFIG VIEW -->
+  <div id="configView" class="layout">
+    <!-- LEFT: active windows -->
+    <aside class="card">
+      <div class="cardHead">
+        <div>
+          <div class="title" style="font-size:16px;">In window now</div>
+          <div class="sub" style="margin-top:6px;">All spawns that are currently inside the respawn window.</div>
+        </div>
+        <div class="leftHeadActions">
+          <div id="activeCount" class="chip">0</div>
+        </div>
+      </div>
+      <div class="content" style="padding:0;">
+        <div id="activeList" class="list"></div>
+        <div id="activeEmpty" class="empty" style="display:none;">
+          Nothing is in window right now.
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <section class="card">
+      <div class="cardHead">
+        <div>
+          <h1 id="bossTitle" class="title">-</h1>
+          <p id="bossSub" class="sub">Select boss. Configure kill times per spawn and channel.</p>
+        </div>
+        <div id="bossBadge" class="badge">Resp: -</div>
+      </div>
+
+      <div class="content">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small">
+            Config view: full controls. Use Monitor view for minimal, no-scroll watching.
+          </div>
+          <div class="row">
+            <button id="resetBossBtn" class="btn danger">Reset boss</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="respContainer"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MONITOR VIEW -->
+  <div id="monitorView" style="display:none;">
+    <section class="card">
+      <div class="cardHead">
+        <div>
+          <h1 id="monitorTitle" class="title">Monitor</h1>
+          <p id="monitorSub" class="sub">Columns per spawn, rows per channel (CH1-CH7).</p>
+        </div>
+        <div class="badge mono" id="monitorBadge">-</div>
+      </div>
+
+      <div class="content">
+        <div class="monitorTop">
+          <div class="small" id="monitorHint">Click the row = start timer. Use CFG to open config.</div>
+          <div class="row">
+            <button id="monitorKillAllBtn" class="btn">Kill ALL now (all spawns + CH1-CH7)</button>
+            <button id="monitorResetBossBtn" class="btn danger">Reset boss</button>
+          </div>
+        </div>
+
+        <div id="monitorColumns" class="monitorColumns"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =========================
+   EDIT HERE: bosses + spawn categories + theme
+   ========================= */
+const BOSSES = [
+  {
+    id: "lis",
+    name: "LIS",
+    theme: { accent: "#3ddc84", accent2: "rgba(61,220,132,.18)" },
+    // ustaw tu swoje widełki
+    respawnMin: 60,
+    respawnMax: 83,
+    spawns: [
+      { id: "srodek",    name: "Srodek" },
+      { id: "dodatkowy", name: "Dodatkowy" },
+      { id: "gora",      name: "Gora" }
+    ]
+  }
+];
+
+const CHANNELS = [1,2,3,4,5,6,7];
+const STORAGE_KEY = "boss_timers_monitor_columns_v1";
+const STORAGE_KEY_LURED = "boss_timers_monitor_columns_v1_lured";
+
+// === Supabase shared state (no auth, per your request) ===
+const SUPABASE_URL = "https://trxccoshecjurifmeakh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyeGNjb3NoZWNqdXJpZm1lYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzk2ODAsImV4cCI6MjA4NDc1NTY4MH0.J0rIc_pK4PjyqNIZ8iDsmUR3pNPHlka30mI4Asrv8u4";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPA_TABLE = "boss_timers_lis";
+
+
+/*
+state structure:
+state[bossId][spawnId][channel] = lastKillMs | null
+*/
+let state = loadState();
+let stateLured = loadStateLured();
+let activeBossId = BOSSES[0].id;
+let activeView = "config"; // "config" | "monitor"
+
+/* UI refs */
+const bossTabsEl = document.getElementById("bossTabs");
+const bossTitleEl = document.getElementById("bossTitle");
+const bossSubEl = document.getElementById("bossSub");
+const bossBadgeEl = document.getElementById("bossBadge");
+const respContainerEl = document.getElementById("respContainer");
+const resetBossBtn = document.getElementById("resetBossBtn");
+
+const configViewEl = document.getElementById("configView");
+const monitorViewEl = document.getElementById("monitorView");
+const viewConfigBtn = document.getElementById("viewConfigBtn");
+const viewMonitorBtn = document.getElementById("viewMonitorBtn");
+
+const monitorColumnsEl = document.getElementById("monitorColumns");
+const monitorBadgeEl = document.getElementById("monitorBadge");
+const monitorSubEl = document.getElementById("monitorSub");
+const monitorKillAllBtn = document.getElementById("monitorKillAllBtn");
+const monitorResetBossBtn = document.getElementById("monitorResetBossBtn");
+
+const alarmToggleEl = document.getElementById("alarmToggle");
+const volumeEl = document.getElementById("volume");
+const testSoundBtn = document.getElementById("testSoundBtn");
+const nowEl = document.getElementById("now");
+
+const activeListEl = document.getElementById("activeList");
+const activeEmptyEl = document.getElementById("activeEmpty");
+const activeCountEl = document.getElementById("activeCount");
+
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+
+const toastEl = document.getElementById("toast");
+
+/* Drawer */
+/* Quick Overview Drawer */
+const openSettingsBtn = document.getElementById("openSettings");
+const closeSettingsBtn = document.getElementById("closeSettings");
+const drawer = document.getElementById("drawer");
+const overlay = document.getElementById("drawerOverlay");
+
+// Quick drawer refs
+const openQuickBtn = document.getElementById("openQuick");
+const closeQuickBtn = document.getElementById("closeQuick");
+const quickDrawer = document.getElementById("quickDrawer");
+const quickOverlay = document.getElementById("quickOverlay");
+const quickBody = document.getElementById("quickBody");
+
+
+function openDrawer(){
+  drawer.classList.add("open");
+  overlay.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+}
+function closeDrawer(){
+  drawer.classList.remove("open");
+  overlay.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+}
+openSettingsBtn.addEventListener("click", openDrawer);
+closeSettingsBtn.addEventListener("click", closeDrawer);
+overlay.addEventListener("click", closeDrawer);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+function openQuick(){
+  quickDrawer.classList.add("open");
+  quickOverlay.classList.add("open");
+  quickDrawer.setAttribute("aria-hidden","false");
+  renderQuickPanel();
+}
+function closeQuick(){
+  quickDrawer.classList.remove("open");
+  quickOverlay.classList.remove("open");
+  quickDrawer.setAttribute("aria-hidden","true");
+}
+
+openQuickBtn.addEventListener("click", openQuick);
+closeQuickBtn.addEventListener("click", closeQuick);
+quickOverlay.addEventListener("click", closeQuick);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeQuick(); });
+
+
+/* Audio */
+let audioCtx = null;
+function beep(times = 3){
+  if (!alarmToggleEl.checked) return;
+  const vol = clamp(parseInt(volumeEl.value || "60", 10) / 100, 0, 1);
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const t0 = audioCtx.currentTime;
+  for (let i=0; i<times; i++){
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+
+    g.gain.setValueAtTime(0.0001, t0 + i*0.22);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + i*0.22 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + i*0.22 + 0.18);
+
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0 + i*0.22);
+    o.stop(t0 + i*0.22 + 0.19);
+  }
+}
+
+/* Export/Import */
+exportBtn.addEventListener("click", async () => {
+  ensureStateShape();
+  const payload = { v: 1, exportedAt: Date.now(), activeBossId, activeView, state };
+  const text = JSON.stringify(payload);
+
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Export: copied to clipboard");
+  }catch(e){
+    /* ignore */
+  }
+  prompt("Copy export text:", text);
+});
+
+importBtn.addEventListener("click", () => {
+  const input = prompt("Paste export text:");
+  if (!input) return;
+
+  try{
+    const payload = JSON.parse(input);
+    if (!payload || typeof payload !== "object") throw new Error("bad payload");
+    if (!payload.state || typeof payload.state !== "object") throw new Error("no state");
+
+    state = payload.state;
+    if (typeof payload.activeBossId === "string") activeBossId = payload.activeBossId;
+    if (payload.activeView === "monitor" || payload.activeView === "config") activeView = payload.activeView;
+
+    saveState();
+  saveStateLured();
+  saveStateLured();
+    toast("Import: saved, reloading...");
+    setTimeout(() => location.reload(), 350);
+  }catch(e){
+    alert("Invalid import format.");
+  }
+});
+
+/* Helpers */
+function getBoss(bossId){
+  return BOSSES.find(b => b.id === bossId) || BOSSES[0];
+}
+
+function applyBossTheme(boss){
+  document.documentElement.style.setProperty("--accent", boss.theme?.accent || "#4aa3ff");
+  document.documentElement.style.setProperty("--accent2", boss.theme?.accent2 || "rgba(74,163,255,.18)");
+}
+
+function ensureStateShape(){
+  for (const boss of BOSSES){
+    if (!stateLured[boss.id] || typeof stateLured[boss.id] !== "object") stateLured[boss.id] = {};
+    if (!state[boss.id] || typeof state[boss.id] !== "object") state[boss.id] = {};
+    for (const sp of boss.spawns){
+      if (!stateLured[boss.id][sp.id] || typeof stateLured[boss.id][sp.id] !== "object") stateLured[boss.id][sp.id] = {};
+      if (!state[boss.id][sp.id] || typeof state[boss.id][sp.id] !== "object") state[boss.id][sp.id] = {};
+      for (const ch of CHANNELS){
+        if (typeof stateLured[boss.id][sp.id][ch] === "undefined") stateLured[boss.id][sp.id][ch] = false;
+        if (typeof state[boss.id][sp.id][ch] === "undefined") state[boss.id][sp.id][ch] = null;
+      }
+    }
+  }
+  saveState();
+  saveStateLured();
+}
+
+async function setKillNow(bossId, spawnId, ch, lured = false){
+  ensureStateShape();
+  const ms = Date.now();
+  state[bossId][spawnId][ch] = ms;
+  stateLured[bossId][spawnId][ch] = !!lured;
+  saveState(); // local cache
+  saveStateLured();
+  saveStateLured();
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms, lured: !!lured });
+
+  if (error) console.error("Supabase upsert error:", error);
+}
+async function setKillMs(bossId, spawnId, ch, ms){
+  ensureStateShape();
+  state[bossId][spawnId][ch] = ms;
+  saveState(); // local cache
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms, lured: !!(stateLured?.[bossId]?.[spawnId]?.[ch]) });
+
+  if (error) console.error("Supabase setKillMs error:", error);
+}
+async function clearKill(bossId, spawnId, ch){
+  ensureStateShape();
+  state[bossId][spawnId][ch] = null;
+  stateLured[bossId][spawnId][ch] = false;
+  saveState(); // local cache
+
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: null, lured: false });
+
+  if (error) console.error("Supabase clearKill error:", error);
+}
+
+async function setLuredFlag(bossId, spawnId, ch, flag){
+  ensureStateShape();
+  stateLured[bossId][spawnId][ch] = !!flag;
+  saveStateLured(); // local cache
+
+  const ms = state?.[bossId]?.[spawnId]?.[ch] ?? null;
+  const { error } = await sb
+    .from(SUPA_TABLE)
+    .upsert({ boss_id: bossId, spawn_id: spawnId, channel: ch, kill_ms: ms, lured: !!flag });
+
+  if (error) console.error("Supabase setLuredFlag error:", error);
+}
+async function resetBoss(bossId){
+  ensureStateShape();
+  const boss = getBoss(bossId);
+
+  // local cache
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      state[bossId][sp.id][ch] = null;
+      stateLured[bossId][sp.id][ch] = false;
+    }
+  }
+  saveState();
+
+  // remote shared state
+  const rows = [];
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      rows.push({ boss_id: bossId, spawn_id: sp.id, channel: ch, kill_ms: null, lured: false });
+    }
+  }
+
+  const { error } = await sb.from(SUPA_TABLE).upsert(rows);
+  if (error) console.error("Supabase resetBoss error:", error);
+}
+
+/* View switch */
+function setView(view){
+  activeView = view;
+  const isConfig = view === "config";
+
+  configViewEl.style.display = isConfig ? "" : "none";
+  monitorViewEl.style.display = isConfig ? "none" : "";
+
+  viewConfigBtn.classList.toggle("active", isConfig);
+  viewMonitorBtn.classList.toggle("active", !isConfig);
+
+  if (isConfig){
+    renderRespGroups();
+    renderActiveWindows();
+    tickConfig();
+  } else {
+    renderMonitorColumns();
+    tickMonitorColumns();
+  }
+}
+
+/* Init / Render: Boss tabs */
+function renderBossTabs(){
+  bossTabsEl.innerHTML = "";
+  for (const boss of BOSSES){
+    const btn = document.createElement("button");
+    btn.className = "pill";
+    btn.textContent = boss.name;
+    btn.dataset.bossId = boss.id;
+    btn.addEventListener("click", () => setActiveBoss(boss.id));
+    bossTabsEl.appendChild(btn);
+  }
+}
+
+function setActiveBoss(bossId){
+  activeBossId = bossId;
+  const boss = getBoss(bossId);
+
+  applyBossTheme(boss);
+
+  [...bossTabsEl.querySelectorAll(".pill")].forEach(el => {
+    el.classList.toggle("active", el.dataset.bossId === bossId);
+  });
+
+  bossTitleEl.textContent = boss.name;
+
+  const min = boss.respawnMin;
+  const max = boss.respawnMax;
+  bossBadgeEl.textContent = (min === max) ? `Resp: ${min}m` : `Resp: ${min}-${max}m`;
+  bossSubEl.textContent = `Spawns: ${boss.spawns.map(s => s.name).join(", ")} | Window: ${min === max ? (min + "m") : (min + "-" + max + "m")}`;
+
+  if (activeView === "config"){
+    renderRespGroups();
+    renderActiveWindows();
+    tickConfig();
+  } else {
+    renderMonitorColumns();
+    tickMonitorColumns();
+  }
+}
+
+/* CONFIG: resp groups */
+function renderRespGroups(){
+  ensureStateShape();
+  respContainerEl.innerHTML = "";
+
+  const boss = getBoss(activeBossId);
+  for (const sp of boss.spawns){
+    const group = document.createElement("div");
+    group.className = "respGroup";
+
+    const head = document.createElement("div");
+    head.className = "respHead";
+
+    const left = document.createElement("div");
+    left.className = "respName";
+    left.innerHTML = `<span class="respDot"></span>${sp.name}`;
+
+    const meta = document.createElement("div");
+    meta.className = "respMeta";
+    meta.textContent = "CH1-CH7";
+
+    head.appendChild(left);
+    head.appendChild(meta);
+
+    const body = document.createElement("div");
+    body.className = "respBody";
+
+    const channels = document.createElement("div");
+    channels.className = "channels";
+    channels.dataset.spawnId = sp.id;
+
+    for (const ch of CHANNELS){
+      const card = document.createElement("div");
+      card.className = "chan";
+      card.id = `chan_${activeBossId}_${sp.id}_${ch}`;
+      card.dataset.channel = String(ch);
+      card.dataset.spawnId = sp.id;
+
+      const top = document.createElement("div");
+      top.className = "chanTop";
+
+      const name = document.createElement("div");
+      name.className = "chanName";
+      name.textContent = `CH${ch}`;
+
+      const st = document.createElement("div");
+      st.className = "state idle";
+      st.textContent = "idle";
+
+      top.appendChild(name);
+      top.appendChild(st);
+
+      const timer = document.createElement("div");
+      timer.className = "timer mono";
+      timer.textContent = "--:--";
+
+      const metaBox = document.createElement("div");
+      metaBox.className = "meta";
+
+      const killLine = document.createElement("div");
+      killLine.textContent = "Kill: -";
+
+      const windowBig = document.createElement("div");
+      windowBig.className = "windowBig mono";
+      windowBig.innerHTML = `Window: <span>--:-- - --:--</span>`;
+
+      const endLine = document.createElement("div");
+      endLine.textContent = "";
+
+      metaBox.appendChild(killLine);
+      metaBox.appendChild(windowBig);
+      metaBox.appendChild(endLine);
+
+      const controls = document.createElement("div");
+      controls.className = "row";
+
+      const startBtn = document.createElement("button");
+      startBtn.className = "btn primary";
+      startBtn.textContent = "Start";
+      startBtn.title = "Set kill time = now";
+      startBtn.addEventListener("click", () => {
+        const isLuredHere = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+        if (isLuredHere){ toast("Odlurowany: uzyj ZABITY w Monitorze."); return; }
+        setKillNow(activeBossId, sp.id, ch, false);
+        toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      const setBtn = document.createElement("button");
+      setBtn.className = "btn";
+      setBtn.textContent = "Set time...";
+      setBtn.title = "YYYY-MM-DD HH:MM";
+      setBtn.addEventListener("click", () => {
+        const current = state[activeBossId][sp.id][ch];
+        const def = current ? formatDateTime(current) : "";
+        const input = prompt("Kill time: YYYY-MM-DD HH:MM", def);
+        if (!input) return;
+
+        const ms = parseUserDateTime(input.trim());
+        if (!ms){
+          toast("Bad time format.");
+          return;
+        }
+        setKillMs(activeBossId, sp.id, ch, ms);
+        toast(`${boss.name} / ${sp.name} CH${ch}: set`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      const clearBtn = document.createElement("button");
+      clearBtn.className = "btn danger";
+      clearBtn.textContent = "Clear";
+      clearBtn.addEventListener("click", () => {
+        clearKill(activeBossId, sp.id, ch);
+        toast(`${boss.name} / ${sp.name} CH${ch}: cleared`);
+        renderRespGroups();
+        renderActiveWindows();
+      });
+
+      controls.appendChild(startBtn);
+      controls.appendChild(setBtn);
+      controls.appendChild(clearBtn);
+
+      card.appendChild(top);
+      card.appendChild(timer);
+      card.appendChild(metaBox);
+      card.appendChild(controls);
+
+      channels.appendChild(card);
+    }
+
+    body.appendChild(channels);
+    group.appendChild(head);
+    group.appendChild(body);
+
+    respContainerEl.appendChild(group);
+  }
+
+  tickConfig();
+}
+
+/* CONFIG tick */
+function tickConfig(){
+  ensureStateShape();
+  const now = Date.now();
+  const boss = getBoss(activeBossId);
+
+  const chanCards = [...respContainerEl.querySelectorAll(".chan")];
+  for (const card of chanCards){
+    const spId = card.dataset.spawnId;
+    const ch = parseInt(card.dataset.channel, 10);
+    const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
+
+    const stateEl = card.querySelector(".state");
+    const timerEl = card.querySelector(".timer");
+    const metaLines = card.querySelectorAll(".meta > div");
+    const killLine = metaLines[0];
+    const windowBig = metaLines[1];
+    const endLine = metaLines[2];
+    card.classList.remove("after");
+
+    if (!lastKill){
+      stateEl.className = "state idle";
+      stateEl.textContent = "idle";
+      timerEl.textContent = "--:--";
+      killLine.textContent = "Kill: -";
+      windowBig.innerHTML = `Window: <span>--:-- - --:--</span>`;
+      endLine.textContent = "";
+      continue;
+    }
+
+    const minAt = lastKill + boss.respawnMin * 60 * 1000;
+    const maxAt = lastKill + boss.respawnMax * 60 * 1000;
+
+    killLine.textContent = `Kill: ${formatTime(lastKill)}`;
+    windowBig.innerHTML = `Window: <span>${formatTime(minAt)} - ${formatTime(maxAt)}</span>`;
+
+    const isLured = !!(stateLured?.[activeBossId]?.[spId]?.[ch]);
+    if (isLured){
+      stateEl.className = "state lured";
+      stateEl.textContent = "odlurowany";
+    }
+
+    const toMin = minAt - now;
+    const toMax = maxAt - now;
+
+    if (toMin > 0){
+      if (!isLured){
+      stateEl.className = "state running";
+      stateEl.textContent = "count";
+      }
+      timerEl.textContent = formatMMSS(toMin);
+      endLine.textContent = `To window end: ${formatMMSS(toMax)}`;
+      sessionStorage.removeItem(firedKeyMin(activeBossId, spId, ch));
+    } else if (toMax > 0){
+      if (!isLured){
+      stateEl.className = "state window";
+      stateEl.textContent = "window";
+      }
+      timerEl.textContent = "00:00";
+      endLine.textContent = `To window end: ${formatMMSS(toMax)}`;
+
+      const key = firedKeyMin(activeBossId, spId, ch);
+      if (!sessionStorage.getItem(key)){
+        sessionStorage.setItem(key, "1");
+        toast(`${boss.name} / ${getSpawnName(activeBossId, spId)} CH${ch}: window start!`);
+        beep(4);
+      }
+    } else {
+      card.classList.add("after");
+      if (!isLured){
+      stateEl.className = "state after";
+      stateEl.textContent = "after";
+      }
+      timerEl.textContent = "00:00";
+      endLine.textContent = "Window passed.";
+      sessionStorage.setItem(firedKeyMin(activeBossId, spId, ch), "1");
+    }
+  }
+}
+
+/* LEFT list (config view helper) */
+function renderActiveWindows(){
+  ensureStateShape();
+  const now = Date.now();
+  const active = [];
+
+  for (const boss of BOSSES){
+    for (const sp of boss.spawns){
+      for (const ch of CHANNELS){
+        const lastKill = state[boss.id]?.[sp.id]?.[ch] ?? null;
+        if (!lastKill) continue;
+
+        const minAt = lastKill + boss.respawnMin * 60 * 1000;
+        const maxAt = lastKill + boss.respawnMax * 60 * 1000;
+
+        if (now >= minAt && now < maxAt){
+          active.push({
+            bossId: boss.id,
+            bossName: boss.name,
+            spawnId: sp.id,
+            spawnName: sp.name,
+            ch,
+            minAt,
+            maxAt,
+            toMax: maxAt - now
+          });
+        }
+      }
+    }
+  }
+
+  active.sort((a,b) => a.toMax - b.toMax);
+  activeCountEl.textContent = String(active.length);
+
+  activeListEl.innerHTML = "";
+  if (active.length === 0){
+    activeEmptyEl.style.display = "block";
+    return;
+  }
+  activeEmptyEl.style.display = "none";
+
+  for (const it of active){
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const main = document.createElement("div");
+    main.className = "itemMain";
+
+    const top = document.createElement("div");
+    top.className = "itemTop";
+
+    const boss = document.createElement("div");
+    boss.className = "itemBoss";
+    boss.textContent = it.bossName;
+
+    const resp = document.createElement("div");
+    resp.className = "itemResp";
+    resp.textContent = it.spawnName;
+
+    const ch = document.createElement("div");
+    ch.className = "itemCh";
+    ch.textContent = `CH${it.ch}`;
+
+    top.appendChild(boss);
+    top.appendChild(resp);
+    top.appendChild(ch);
+
+    const win = document.createElement("div");
+    win.className = "itemWindow mono";
+    win.textContent = `${formatTime(it.minAt)} - ${formatTime(it.maxAt)}`;
+
+    const sub = document.createElement("div");
+    sub.className = "itemSub";
+    sub.textContent = `To window end: ${formatMMSS(it.toMax)}`;
+
+    main.appendChild(top);
+    main.appendChild(win);
+    main.appendChild(sub);
+
+    const right = document.createElement("div");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "tick";
+    cb.title = "Check = kill now (restart)";
+    cb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!!(stateLured?.[it.bossId]?.[it.spawnId]?.[it.ch])){
+          setLuredFlag(it.bossId, it.spawnId, it.ch, false);
+          toast("Zabity (odlure off).");
+          return;
+        }
+        setKillNow(it.bossId, it.spawnId, it.ch, false);
+      toast(`${it.bossName} / ${it.spawnName} CH${it.ch}: restart`);
+      if (activeBossId === it.bossId && activeView === "config"){
+        renderRespGroups();
+      }
+      renderActiveWindows();
+      cb.checked = false;
+    });
+
+    right.appendChild(cb);
+
+    row.appendChild(main);
+    row.appendChild(right);
+
+    row.addEventListener("click", () => {
+      setActiveBoss(it.bossId);
+      setView("config");
+      setTimeout(() => {
+        const el = document.getElementById(`chan_${it.bossId}_${it.spawnId}_${it.ch}`);
+        if (el){
+          el.scrollIntoView({ behavior:"smooth", block:"center" });
+          el.classList.add("flash");
+          setTimeout(() => el.classList.remove("flash"), 700);
+        }
+      }, 60);
+    });
+
+    activeListEl.appendChild(row);
+  }
+}
+
+
+/* QUICK PANEL: boss-spawn -> channel boxes (no timers, only colors) */
+function getSpawnChannelState(bossId, spawnId, ch){
+  const boss = getBoss(bossId);
+  const now = Date.now();
+
+  const lastKill = state?.[bossId]?.[spawnId]?.[ch] ?? null;
+  const lured = !!(stateLured?.[bossId]?.[spawnId]?.[ch]);
+
+  if (lured) return "lured";
+  if (!lastKill) return "normal";
+
+  const minAt = lastKill + boss.respawnMin * 60 * 1000;
+  const maxAt = lastKill + boss.respawnMax * 60 * 1000;
+
+  if (now >= minAt && now < maxAt) return "window";
+  if (now < minAt && (minAt - now) <= 2*60*1000) return "soon";
+  if (now >= maxAt) return "after";
+  return "normal";
+}
+
+async function restartSpawnChannel(bossId, spawnId, ch){
+  const isLuredHere = !!(stateLured?.[bossId]?.[spawnId]?.[ch]);
+  if (isLuredHere){
+    await setLuredFlag(bossId, spawnId, ch, false);
+    toast("Zabity (odlure off).");
+    return;
+  }
+  await setKillNow(bossId, spawnId, ch, false);
+}
+
+function renderQuickPanel(){
+  if (!quickDrawer.classList.contains("open")) return;
+  ensureStateShape();
+
+  quickBody.innerHTML = "";
+
+  for (const boss of BOSSES){
+    for (const sp of boss.spawns){
+      const wrap = document.createElement("div");
+      wrap.className = "qBoss";
+
+      const head = document.createElement("div");
+      head.className = "qBossName";
+      head.innerHTML = `<span>${boss.name} - ${sp.name}</span><span class="mini">CH1-CH7</span>`;
+
+      const chGrid = document.createElement("div");
+      chGrid.className = "qChannels";
+
+      for (const ch of CHANNELS){
+        const btn = document.createElement("div");
+        btn.className = "qCh mono";
+        btn.textContent = String(ch);
+
+        const st = getSpawnChannelState(boss.id, sp.id, ch);
+        if (st !== "normal") btn.classList.add(st);
+
+        btn.title = "Klik = start timera dla tego respa na tym kanale";
+        btn.addEventListener("click", async () => {
+          const wasLured = !!(stateLured?.[boss.id]?.[sp.id]?.[ch]);
+          await restartSpawnChannel(boss.id, sp.id, ch);
+          if (!wasLured){
+            toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+          }
+          // refresh visible views
+          if (activeView === "monitor"){
+            tickMonitorColumns();
+          } else {
+            tickConfig();
+            renderActiveWindows();
+          }
+          renderQuickPanel();
+        });
+
+        chGrid.appendChild(btn);
+      }
+
+      wrap.appendChild(head);
+      wrap.appendChild(chGrid);
+      quickBody.appendChild(wrap);
+    }
+  }
+}
+
+/* MONITOR: columns per spawn, rows per channel */
+function computeStatus(boss, lastKillMs){
+  const now = Date.now();
+  if (!lastKillMs) return { kind:"idle" };
+
+  const minAt = lastKillMs + boss.respawnMin * 60 * 1000;
+  const maxAt = lastKillMs + boss.respawnMax * 60 * 1000;
+
+  const toMin = minAt - now;
+  const toMax = maxAt - now;
+
+  if (toMin > 0){
+    return { kind:"running", toMin, toMax, minAt, maxAt };
+  }
+  if (toMax > 0){
+    return { kind:"window", toMin:0, toMax, minAt, maxAt };
+  }
+  return { kind:"ready", toMin:0, toMax:0, minAt, maxAt };
+}
+
+function renderMonitorColumns(){
+  ensureStateShape();
+  const boss = getBoss(activeBossId);
+
+  monitorSubEl.textContent =
+    `Boss: ${boss.name} | Spawns: ${boss.spawns.map(s => s.name).join(", ")} | Window: ${
+      boss.respawnMin === boss.respawnMax ? (boss.respawnMin + "m") : (boss.respawnMin + "-" + boss.respawnMax + "m")
+    }`;
+
+  monitorBadgeEl.textContent = (boss.respawnMin === boss.respawnMax)
+    ? `Resp ${boss.respawnMin}m`
+    : `Resp ${boss.respawnMin}-${boss.respawnMax}m`;
+
+  monitorColumnsEl.innerHTML = "";
+
+  for (const sp of boss.spawns){
+    const col = document.createElement("div");
+    col.className = "spawnCol";
+    col.dataset.spawnId = sp.id;
+
+    const head = document.createElement("div");
+    head.className = "spawnColHead";
+
+    const nm = document.createElement("div");
+    nm.className = "spawnColName";
+    nm.innerHTML = `<span class="spawnColDot"></span>${sp.name}`;
+
+    const mini = document.createElement("div");
+    mini.className = "small";
+    mini.textContent = "CH1-CH7";
+
+    head.appendChild(nm);
+    head.appendChild(mini);
+
+    const body = document.createElement("div");
+    body.className = "spawnColBody";
+
+    for (const ch of CHANNELS){
+      const row = document.createElement("div");
+      row.className = "chRow";
+      row.dataset.spawnId = sp.id;
+      row.dataset.channel = String(ch);
+
+      const chName = document.createElement("div");
+      chName.className = "chName mono";
+      chName.textContent = `ch${ch}`;
+
+      const main = document.createElement("div");
+      main.className = "chMain";
+
+      const t = document.createElement("div");
+      t.className = "chTimer mono";
+      t.textContent = "--:--";
+
+      const w = document.createElement("div");
+      w.className = "chWindow mono";
+      w.textContent = "--:-- - --:--";
+
+      main.appendChild(t);
+      main.appendChild(w);
+
+      const actions = document.createElement("div");
+      actions.className = "chActions";
+
+      const badge = document.createElement("span");
+      badge.className = "chBadge idle";
+      badge.textContent = "idle";
+
+      const actBtn = document.createElement("button");
+      actBtn.type = "button";
+      actBtn.className = "cfgBtn luredBtn";
+      const isLured = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+      actBtn.textContent = isLured ? "zabity" : "odluruj";
+      actBtn.title = isLured ? "Zabity: wroc do normalnego stanu" : "Odluruj: restart timer + oznacz (do zbicia)";
+      actBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const currentlyLured = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+
+        if (!currentlyLured){
+          await setKillNow(activeBossId, sp.id, ch, true);
+          toast(`${boss.name} / ${sp.name} CH${ch}: odlurowany (do zbicia)`);
+        } else {
+          ensureStateShape();
+          stateLured[activeBossId][sp.id][ch] = false;
+          saveStateLured();
+
+          const ms = state?.[activeBossId]?.[sp.id]?.[ch] ?? null;
+          const { error } = await sb
+            .from(SUPA_TABLE)
+            .upsert({ boss_id: activeBossId, spawn_id: sp.id, channel: ch, kill_ms: ms, lured: false });
+
+          if (error) console.error("Supabase unlure error:", error);
+          toast(`${boss.name} / ${sp.name} CH${ch}: zabity`);
+        }
+
+        renderMonitorColumns();
+        renderActiveWindows();
+      });
+
+      actions.appendChild(badge);
+      actions.appendChild(actBtn);
+
+      row.appendChild(chName);
+      row.appendChild(main);
+      row.appendChild(actions);
+
+      // CLICK WHOLE ROW = START TIMER (kill now)
+      row.addEventListener("click", async () => {
+        // If it LOOKS lured (yellow), treat as lured (anti-desync)
+        const isLuredVisual = row.classList.contains("lured");
+        const isLuredState = !!(stateLured?.[activeBossId]?.[sp.id]?.[ch]);
+
+        if (isLuredVisual || isLuredState){
+          // remove lured WITHOUT resetting timer
+          await setLuredFlag(activeBossId, sp.id, ch, false);
+          toast("Zabity (odlure off).");
+          renderMonitorColumns();
+          renderActiveWindows();
+          renderQuickPanel();
+          return;
+        }
+
+        await setKillNow(activeBossId, sp.id, ch, false);
+        toast(`${boss.name} / ${sp.name} CH${ch}: start`);
+        tickMonitorColumns();
+        renderActiveWindows();
+        renderQuickPanel();
+      });
+
+      body.appendChild(row);
+    }
+
+    col.appendChild(head);
+    col.appendChild(body);
+    monitorColumnsEl.appendChild(col);
+  }
+
+  tickMonitorColumns();
+}
+
+function tickMonitorColumns(){
+  ensureStateShape();
+  if (activeView !== "monitor") return;
+
+  const boss = getBoss(activeBossId);
+  const rows = [...monitorColumnsEl.querySelectorAll(".chRow")];
+
+  for (const row of rows){
+    const spId = row.dataset.spawnId;
+    const ch = parseInt(row.dataset.channel, 10);
+
+    const lastKill = state[activeBossId]?.[spId]?.[ch] ?? null;
+    const status = computeStatus(boss, lastKill);
+    // visual alerts
+    row.classList.remove("soon","window","lured","after");
+
+    const isLured = !!(stateLured?.[activeBossId]?.[spId]?.[ch]);
+    if (isLured){
+      row.classList.add("lured");
+    }
+
+    // 2-minute warning before min resp
+    if (status.kind === "running" && status.toMin <= 2*60*1000){
+      row.classList.add("soon");
+    }
+
+    // window active
+    if (status.kind === "window"){
+      row.classList.add("window");
+    }
+
+    // after window (missed)
+    if (!isLured && status.kind === "ready"){
+      row.classList.add("after");
+    }
+
+
+    const timerEl = row.querySelector(".chTimer");
+    const windowEl = row.querySelector(".chWindow");
+    const badgeEl = row.querySelector(".chBadge");
+
+    if (status.kind === "idle"){
+      badgeEl.className = "chBadge idle";
+      badgeEl.textContent = "idle";
+      timerEl.textContent = "--:--";
+      windowEl.textContent = "--:-- - --:--";
+      continue;
+    }
+
+    windowEl.textContent = `${formatTime(status.minAt)} - ${formatTime(status.maxAt)}`;
+
+
+    // lured label overrides the small badge text
+    if (isLured){
+      badgeEl.className = "chBadge lured";
+      badgeEl.textContent = "odlurowany";
+    }
+
+    if (status.kind === "running"){
+      if (!isLured){
+      badgeEl.className = "chBadge running";
+      badgeEl.textContent = "count";
+      }
+      timerEl.textContent = formatMMSS(status.toMin);
+      sessionStorage.removeItem(firedKeyMin(activeBossId, spId, ch));
+      continue;
+    }
+
+    if (status.kind === "window"){
+      if (!isLured){
+      badgeEl.className = "chBadge window";
+      badgeEl.textContent = "window";
+      }
+      timerEl.textContent = "00:00";
+
+      const key = firedKeyMin(activeBossId, spId, ch);
+      if (!sessionStorage.getItem(key)){
+        sessionStorage.setItem(key, "1");
+        toast(`${boss.name} / ${getSpawnName(activeBossId, spId)} CH${ch}: window start!`);
+        beep(4);
+      }
+      continue;
+    }
+
+    if (!isLured){
+    badgeEl.className = "chBadge after";
+    badgeEl.textContent = "after";
+    }
+    timerEl.textContent = "00:00";
+    sessionStorage.setItem(firedKeyMin(activeBossId, spId, ch), "1");
+  }
+}
+
+/* Supabase: load + realtime */
+async function loadStateFromSupabase(){
+  ensureStateShape();
+
+  const { data, error } = await sb
+    .from(SUPA_TABLE)
+    .select("boss_id, spawn_id, channel, kill_ms, lured");
+
+  if (error){
+    console.error("Supabase load error:", error);
+    return;
+  }
+
+  // reset local cache to empty, then fill from Supabase
+  state = {};
+  stateLured = {};
+  ensureStateShape();
+
+  for (const row of data){
+    if (!row) continue;
+    if (row.kill_ms === null || typeof row.kill_ms === "undefined") continue;
+    if (!state[row.boss_id] || !state[row.boss_id][row.spawn_id]) continue;
+    state[row.boss_id][row.spawn_id][row.channel] = row.kill_ms;
+    stateLured[row.boss_id][row.spawn_id][row.channel] = !!row.lured;
+  }
+
+  saveState();
+}
+
+function applySupabaseRow(row){
+  if (!row) return;
+  ensureStateShape();
+  if (!state[row.boss_id] || !state[row.boss_id][row.spawn_id]) return;
+  state[row.boss_id][row.spawn_id][row.channel] = row.kill_ms;
+  stateLured[row.boss_id][row.spawn_id][row.channel] = !!row.lured;
+  saveState();
+  saveStateLured();
+}
+
+function subscribeRealtime(){
+  sb.channel("boss_timers_realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: SUPA_TABLE },
+      async (_payload) => {
+        // safest: re-fetch whole state so everyone stays identical
+        await loadStateFromSupabase();
+
+        // refresh visible UI
+        if (activeView === "monitor"){
+          renderMonitorColumns();
+          tickMonitorColumns();
+        } else {
+          renderRespGroups();
+          tickConfig();
+          renderActiveWindows();
+        }
+        renderQuickPanel();
+      }
+    )
+    .subscribe((status) => {
+      // Helpful for debugging: "SUBSCRIBED" should appear in console
+      console.log("[realtime]", status);
+    });
+}
+
+/* Buttons */
+viewConfigBtn.addEventListener("click", () => setView("config"));
+viewMonitorBtn.addEventListener("click", () => setView("monitor"));
+
+resetBossBtn.addEventListener("click", async () => {
+  await resetBoss(activeBossId);
+  toast(`Reset: ${getBoss(activeBossId).name}`);
+  renderRespGroups();
+  renderActiveWindows();
+  if (activeView === "monitor"){
+    renderMonitorColumns();
+  }
+});
+
+monitorResetBossBtn.addEventListener("click", async () => {
+  await resetBoss(activeBossId);
+  toast(`Reset: ${getBoss(activeBossId).name}`);
+  renderMonitorColumns();
+  renderActiveWindows();
+});
+
+monitorKillAllBtn.addEventListener("click", async () => {
+  const boss = getBoss(activeBossId);
+  const jobs = [];
+  for (const sp of boss.spawns){
+    for (const ch of CHANNELS){
+      jobs.push(setKillNow(activeBossId, sp.id, ch));
+    }
+  }
+  await Promise.all(jobs);
+  toast(`${boss.name}: kill all now (all spawns + CH1-CH7)`);
+  tickMonitorColumns();
+  renderActiveWindows();
+});
+
+/* Settings */
+testSoundBtn.addEventListener("click", () => beep(3));
+
+/* Timers loop */
+setInterval(() => { nowEl.textContent = formatTime(Date.now()); }, 250);
+setInterval(() => {
+  if (activeView === "config"){
+    tickConfig();
+    renderActiveWindows();
+  } else {
+    tickMonitorColumns();
+  }
+  renderQuickPanel();
+}, 250);
+
+/* Boot */
+async function init(){
+  ensureStateShape();
+  renderBossTabs();
+
+  // shared state first
+  await loadStateFromSupabase();
+  subscribeRealtime();
+
+  // fallback: if Realtime is not enabled on the table, polling still keeps clients in sync
+  setInterval(async () => {
+    await loadStateFromSupabase();
+    if (activeView === "monitor"){
+      renderMonitorColumns();
+      tickMonitorColumns();
+    } else {
+      tickConfig();
+      renderActiveWindows();
+    }
+    renderQuickPanel();
+  }, 10000);
+
+  setActiveBoss(activeBossId);
+  setView(activeView);
+}
+init();
+
+/* Utils */
+function getSpawnName(bossId, spawnId){
+  const boss = getBoss(bossId);
+  const sp = boss.spawns.find(s => s.id === spawnId);
+  return sp ? sp.name : spawnId;
+}
+
+function firedKeyMin(bossId, spawnId, ch){
+  return `fired_min_${bossId}_${spawnId}_${ch}`;
+}
+
+function formatMMSS(ms){
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
+function pad2(n){ return String(n).padStart(2,"0"); }
+function formatTime(ms){
+  const d = new Date(ms);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function formatDateTime(ms){
+  const d = new Date(ms);
+  const Y = d.getFullYear();
+  const M = pad2(d.getMonth()+1);
+  const D = pad2(d.getDate());
+  const h = pad2(d.getHours());
+  const m = pad2(d.getMinutes());
+  return `${Y}-${M}-${D} ${h}:${m}`;
+}
+function parseUserDateTime(str){
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/);
+  if (!m) return null;
+  const Y = +m[1], Mo = +m[2], D = +m[3], h = +m[4], mi = +m[5];
+  if (Mo<1||Mo>12||D<1||D>31||h>23||mi>59) return null;
+  const dt = new Date(Y, Mo-1, D, h, mi, 0, 0);
+  return isNaN(dt.getTime()) ? null : dt.getTime();
+}
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === "object") ? parsed : {};
+  }catch(e){ return {}; }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadStateLured(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY_LURED);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === "object") ? parsed : {};
+  }catch(e){ return {}; }
+}
+function saveStateLured(){
+  localStorage.setItem(STORAGE_KEY_LURED, JSON.stringify(stateLured));
+}
+
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = "block";
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 2200);
+}
+</script>
+</body>
+</html>
