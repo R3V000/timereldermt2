@@ -924,10 +924,20 @@ const BOSSES = [
     spawns: [
       { id: "srodek",     name: "Srodek" }
     ]
+  },
+  {
+    id: "wladcared_drzew",
+    name: "Red-Las Boss",
+    theme: { accent: "#3ddc84", accent2: "rgba(255,60,60,.18)" },
+    respawnMin: 50,
+    respawnMax: 55,
+    spawns: [
+      { id: "koniec",     name: "Koniec" }
+    ]
   }
 ];
 
-const CHANNELS = [1,2,3,4,5,6,7];
+const CHANNELS = [1,2,3,4,5,6];
 const STORAGE_KEY = "boss_timers_monitor_columns_v1";
 const STORAGE_KEY_LURED = "boss_timers_monitor_columns_v1_lured";
 
@@ -2154,4 +2164,5 @@ function toast(msg){
 </script>
 </body>
 </html>
+
 
